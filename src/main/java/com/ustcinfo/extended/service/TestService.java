@@ -97,7 +97,7 @@ public class TestService {
         logger.debug("搜索的结果为： ");
         logger.debug(list.toString());
 
-        return null;
+        return list;
     }
 
 }

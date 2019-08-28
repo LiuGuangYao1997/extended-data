@@ -6,7 +6,8 @@ package com.ustcinfo.extended.common;
  */
 public enum DataType {
 
-    USER_INFO_SELECT_1("USER_INFO_SELECT_1", "用户个人信息查询1","1");
+    USER_INFO_SELECT_1("USER_INFO_SELECT_1", "用户个人信息查询1","1"),
+    PRODUCT_INFO_SELECT_1("PRODUCT_INFO_SELECT_1", "产品信息查询1", "2");
 
     private String key;
     private String describe;
