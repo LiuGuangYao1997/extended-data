@@ -1,0 +1,15 @@
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/extended-data-demo?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    username: root
+    password: root
+
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com:
+      ustcinfo:
+        extended: debug
