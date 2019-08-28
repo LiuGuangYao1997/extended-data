@@ -24,10 +24,6 @@ public class TestService {
 
     private Logger logger = LoggerFactory.getLogger(TestService.class);
 
-    public List findExtended() {
-        return testRepository.findList("select new map( user.id as id, user.username as username, user.age as age, ext_user.tel as tel, ext_user.email as email) from ExtUser ext_user, User user ", null);
-    }
-
     public List<Map<String, Object>> queryDataWithExt(DataType dataType) {
 
         //1. 先根据dataType查找出扩展配置表中与此业务相关的配置字段

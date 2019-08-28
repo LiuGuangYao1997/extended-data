@@ -19,8 +19,6 @@ public class TestRepository {
     @Autowired
     private EntityManager entityManager;
 
-
-
     /**
      * @param qlString 带有参数占位符的JPQL语句
      * @param map 参数map，key为参数名，value为参数值

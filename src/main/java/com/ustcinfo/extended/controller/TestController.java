@@ -17,11 +17,7 @@ public class TestController {
     @Autowired
     private TestService testService;
 
-    @RequestMapping("/test/findExtended")
-    public List findExtended(){
-        return  testService.findExtended();
-    }
-
+    
     @RequestMapping("/test/extQuery/{dataType}")
     public List extQuery(@PathVariable String dataType){
         if (Objects.equals(dataType, DataType.PRODUCT_INFO_SELECT_1.getCode())){
