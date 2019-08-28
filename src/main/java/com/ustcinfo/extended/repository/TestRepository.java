@@ -24,7 +24,7 @@ public class TestRepository {
      * @param map 参数map，key为参数名，value为参数值
      * @return List<Map<String, Object>> map为实体对象 key为属性名，value为属性值
      */
-    public List<Map<String, Object>> findList(String qlString, Map<String,String> map){
+    public List findList(String qlString, Map<String,String> map){
         Query query = setParameters(qlString, map);
         return query.getResultList();
     }
