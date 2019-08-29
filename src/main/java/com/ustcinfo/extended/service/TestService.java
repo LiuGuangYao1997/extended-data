@@ -129,7 +129,7 @@ public class TestService {
     }
 
     @Transactional
-    public int deleteDataWithExt(BusinessType businessType, Long id) {
+    public String deleteDataWithExt(BusinessType businessType, Long id) {
 
         if (id == null) {
             throw new RuntimeException("删除的id不能为空");
@@ -164,8 +164,7 @@ public class TestService {
         //再删除主表记录
         int MainRows = testRepository.executeUpdate(jpqlMainStr.toString(), map);
 
-        return 0;
-
+        return "删除主表记录数: " + MainRows + "; 删除扩展表记录数: " + exRows;
     }
 
 }

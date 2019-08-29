@@ -30,14 +30,14 @@ public class TestRestController {
     }
 
     @RequestMapping("/test/extDelete/{dataType}/{id}")
-    public int extDelete(@PathVariable String dataType, @PathVariable Long id){
+    public String extDelete(@PathVariable String dataType, @PathVariable Long id){
         if (Objects.equals(dataType, BusinessType.PRODUCT_INFO_SELECT_1.getCode())){
             return testService.deleteDataWithExt(BusinessType.PRODUCT_INFO_SELECT_1, id);
         }
         if (Objects.equals(dataType, BusinessType.USER_INFO_SELECT_1.getCode())){
             return testService.deleteDataWithExt(BusinessType.USER_INFO_SELECT_1, id);
         }else {
-            return 0;
+            return null;
         }
     }
 }
