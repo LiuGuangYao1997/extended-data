@@ -6,14 +6,14 @@ package com.ustcinfo.extended.common;
  */
 public enum BusinessType {
 
-    USER_INFO_SELECT_1("USER_INFO_SELECT_1", "用户个人信息查询1","1"),
+    USER_INFO_SELECT_1("USER_INFO_SELECT_1", "用户个人信息查询1", "1"),
     PRODUCT_INFO_SELECT_1("PRODUCT_INFO_SELECT_1", "产品信息查询1", "2");
 
     private String key;
     private String describe;
     private String code;
 
-    private BusinessType(String key, String describe, String code){
+    private BusinessType(String key, String describe, String code) {
         this.key = key;
         this.describe = describe;
         this.code = code;

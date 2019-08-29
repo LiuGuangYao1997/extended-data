@@ -1,5 +1,6 @@
 package com.ustcinfo.extended.repository;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -21,20 +22,20 @@ public class TestRepository {
 
     /**
      * @param qlString 带有参数占位符的JPQL语句
-     * @param map 参数map，key为参数名，value为参数值
-     * @return List<Map<String, Object>> map为实体对象 key为属性名，value为属性值
+     * @param map      参数map，key为参数名，value为参数值
+     * @return List<Map   <   String   ,       Object>> map为实体对象 key为属性名，value为属性值
      */
-    public List findList(String qlString, Map<String,Object> map){
+    public List findList(String qlString, Map<String, Object> map) {
         Query query = setParameters(qlString, map);
         return query.getResultList();
     }
 
     /**
      * @param qlString 带有参数占位符的JPQL语句
-     * @param map 参数map，key为参数名，value为参数值
+     * @param map      参数map，key为参数名，value为参数值
      * @return 操作影响记录数
      */
-    public int executeUpdate(String qlString, Map<String,Object> map){
+    public int executeUpdate(String qlString, Map<String, Object> map) {
         Query query = setParameters(qlString, map);
         return query.executeUpdate();
     }
