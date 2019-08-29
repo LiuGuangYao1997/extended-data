@@ -10,7 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import javax.transaction.Transactional;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author liu.guangyao@utscinfo.com
@@ -37,31 +41,10 @@ public class TestService {
 
     public List<Map<String, Object>> queryDataWithExt(BusinessType businessType) {
 
-        //1.查询ExtendedConfigMain
-        String queryMainStr = "select m from " + EX_CONFIG_MAIN + " m  where businessCode = :businessCode";
-        HashMap<String, String> exParamMap = new HashMap<>();
-        exParamMap.put("businessCode", businessType.getCode());
-        List<ExtendedConfigMain> exConfigMainList = testRepository.findList(queryMainStr, exParamMap);
 
-        //对查询的exConfigMainList做检查
-        if (exConfigMainList == null){
-            throw new RuntimeException("查询的扩展主配置表为空");
-        }
-        if (exConfigMainList.size() != 2){
-            throw new RuntimeException("扩展主配置表的配置有误，请检查\n" +
-                    "可能原因：同一业务代码配置记录数不等于2\n" +
-                    exConfigMainList.toString());
-        }
+        List<ExtendedConfigMain> exConfigMainList = getExtendedConfigMains(businessType);
 
-        //2.查询ExtendedConfigDetail
-        String queryDetailStr = "select d from " + EX_CONFIG_DETAIL + " d, " + EX_CONFIG_MAIN + " m" +
-                " where m.id = d.extendedMainId and m.businessCode = :businessCode";
-        List<ExtendedConfigDetail> exConfigDetailList = testRepository.findList(queryDetailStr, exParamMap);
-
-        //对查询的exConfigDetailList做检查
-        if (exConfigDetailList == null){
-            throw new RuntimeException("查询的扩展从配置表为空");
-        }
+        List<ExtendedConfigDetail> exConfigDetailList = getExtendedConfigDetails(businessType);
 
         //3.根据查询出来的扩展表配置记录，拼接jpql语句
         StringBuilder jpqlStr = new StringBuilder();
@@ -70,7 +53,7 @@ public class TestService {
         jpqlStr.append("select new map(");
         for (ExtendedConfigMain configMain : exConfigMainList) {
             for (ExtendedConfigDetail configDetail : exConfigDetailList) {
-                if (Objects.equals(configDetail.getExtendedMainId(), configMain.getId())){
+                if (Objects.equals(configDetail.getExtendedMainId(), configMain.getId())) {
                     jpqlStr.append(" ").append(configMain.getEntityAlias()).append(".")
                             .append(configDetail.getEntityFiledName()).append(" as ")
                             .append(configDetail.getEntityFiledAlias()).append(",");
@@ -109,6 +92,80 @@ public class TestService {
         logger.debug(list.toString());
 
         return list;
+    }
+
+    private List<ExtendedConfigDetail> getExtendedConfigDetails(BusinessType businessType) {
+        //2.查询ExtendedConfigDetail
+        String queryDetailStr = "select d from " + EX_CONFIG_DETAIL + " d, " + EX_CONFIG_MAIN + " m" +
+                " where m.id = d.extendedMainId and m.businessCode = :businessCode";
+        Map<String, Object> exParamMap = new HashMap<>();
+        exParamMap.put("businessCode", businessType.getCode());
+        List<ExtendedConfigDetail> exConfigDetailList = testRepository.findList(queryDetailStr, exParamMap);
+
+        //对查询的exConfigDetailList做检查
+        if (exConfigDetailList == null) {
+            throw new RuntimeException("查询的扩展从配置表为空");
+        }
+        return exConfigDetailList;
+    }
+
+    private List<ExtendedConfigMain> getExtendedConfigMains(BusinessType businessType) {
+        //1.查询ExtendedConfigMain
+        String queryMainStr = "select m from " + EX_CONFIG_MAIN + " m  where businessCode = :businessCode";
+        Map<String, Object> exParamMap = new HashMap<>();
+        exParamMap.put("businessCode", businessType.getCode());
+        List<ExtendedConfigMain> exConfigMainList = testRepository.findList(queryMainStr, exParamMap);
+
+        //对查询的exConfigMainList做检查
+        if (exConfigMainList == null) {
+            throw new RuntimeException("查询的扩展主配置表为空");
+        }
+        if (exConfigMainList.size() != 2) {
+            throw new RuntimeException("扩展主配置表的配置有误，请检查\n\t" +
+                    "可能原因：同一业务代码配置记录数不等于2\n\t配置表查询的数据: " +
+                    exConfigMainList.toString());
+        }
+        return exConfigMainList;
+    }
+
+    @Transactional
+    public int deleteDataWithExt(BusinessType businessType, Long id) {
+
+        if (id == null) {
+            throw new RuntimeException("删除的id不能为空");
+        }
+
+        //查询主表与扩展表配置信息
+        List<ExtendedConfigMain> exConfigMainList = getExtendedConfigMains(businessType);
+
+        StringBuilder jpqlMainStr = new StringBuilder();
+        StringBuilder jpqlExtendedStr = new StringBuilder();
+
+        for (ExtendedConfigMain configMain : exConfigMainList) {
+            //拼接主表的删除语句
+            if (configMain.getIsMainTable() == 1) {
+                jpqlMainStr.append("delete ").append(configMain.getEntityName()).append(" ")
+                        .append(configMain.getEntityAlias()).append(" where ").append(configMain.getEntityAlias())
+                        .append(".").append(configMain.getPrimaryKeyFiledName()).append("=:paramId");
+            }
+            //拼接从表的删除语句
+            if (configMain.getIsMainTable() == 0) {
+                jpqlExtendedStr.append("delete ").append(configMain.getEntityName()).append(" ")
+                        .append(configMain.getEntityAlias()).append(" where ").append(configMain.getEntityAlias())
+                        .append(".").append(configMain.getForeignKeyFiledName()).append("=:paramId");
+            }
+        }
+
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("paramId", id);
+
+        //先删除扩展表记录
+        int exRows = testRepository.executeUpdate(jpqlExtendedStr.toString(), map);
+        //再删除主表记录
+        int MainRows = testRepository.executeUpdate(jpqlMainStr.toString(), map);
+
+        return 0;
+
     }
 
 }

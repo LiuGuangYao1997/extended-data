@@ -24,7 +24,7 @@ public class TestRepository {
      * @param map 参数map，key为参数名，value为参数值
      * @return List<Map<String, Object>> map为实体对象 key为属性名，value为属性值
      */
-    public List findList(String qlString, Map<String,String> map){
+    public List findList(String qlString, Map<String,Object> map){
         Query query = setParameters(qlString, map);
         return query.getResultList();
     }
@@ -34,15 +34,15 @@ public class TestRepository {
      * @param map 参数map，key为参数名，value为参数值
      * @return 操作影响记录数
      */
-    public int executeUpdate(String qlString, Map<String,String> map){
+    public int executeUpdate(String qlString, Map<String,Object> map){
         Query query = setParameters(qlString, map);
         return query.executeUpdate();
     }
 
-    private Query setParameters(String qlString, Map<String, String> map) {
+    private Query setParameters(String qlString, Map<String, Object> map) {
         Query query = entityManager.createQuery(qlString);
         if (map != null) {
-            for (Map.Entry<String, String> entry : map.entrySet()) {
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
                 query.setParameter(entry.getKey(), entry.getValue());
             }
         }
