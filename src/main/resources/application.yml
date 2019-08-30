@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/extended-data-demo?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/extended-data?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: root
     password: root
 
