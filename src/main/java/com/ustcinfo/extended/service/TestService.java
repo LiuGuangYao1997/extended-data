@@ -91,39 +91,7 @@ public class TestService {
         return list;
     }
 
-    private List<ExtendedConfigDetail> getExtendedConfigDetails(BusinessType businessType) {
-        //2.查询ExtendedConfigDetail
-        String queryDetailStr = "select d from " + EX_CONFIG_DETAIL + " d, " + EX_CONFIG_MAIN + " m" +
-                " where m.id = d.extendedMainId and m.businessCode = :businessCode";
-        Map<String, Object> exParamMap = new HashMap<>();
-        exParamMap.put("businessCode", businessType.getCode());
-        List<ExtendedConfigDetail> exConfigDetailList = testRepository.findList(queryDetailStr, exParamMap);
 
-        //对查询的exConfigDetailList做检查
-        if (exConfigDetailList == null) {
-            throw new RuntimeException("查询的扩展从配置表为空");
-        }
-        return exConfigDetailList;
-    }
-
-    private List<ExtendedConfigMain> getExtendedConfigMains(BusinessType businessType) {
-        //1.查询ExtendedConfigMain
-        String queryMainStr = "select m from " + EX_CONFIG_MAIN + " m  where businessCode = :businessCode";
-        Map<String, Object> exParamMap = new HashMap<>();
-        exParamMap.put("businessCode", businessType.getCode());
-        List<ExtendedConfigMain> exConfigMainList = testRepository.findList(queryMainStr, exParamMap);
-
-        //对查询的exConfigMainList做检查
-        if (exConfigMainList == null) {
-            throw new RuntimeException("查询的扩展主配置表为空");
-        }
-        if (exConfigMainList.size() != 2) {
-            throw new RuntimeException("扩展主配置表的配置有误，请检查\n\t" +
-                    "可能原因：同一业务代码配置记录数不等于2\n\t配置表查询的数据: " +
-                    exConfigMainList.toString());
-        }
-        return exConfigMainList;
-    }
 
     @Transactional
     public String deleteDataWithExt(BusinessType businessType, Long id) {
@@ -221,6 +189,15 @@ public class TestService {
         return "更新主表记录数: " + mainUpdRows + "; 更新扩展表记录数: " + extUpdRows;
     }
 
+    public String insertDataWithExt(BusinessType businessType, Map<String, Object> map){
+        List<ExtendedConfigMain> configMains = getExtendedConfigMains(businessType);
+        List<ExtendedConfigDetail> configDetails = getExtendedConfigDetails(businessType);
+
+        StringBuilder jpqlStr = new StringBuilder();
+
+        return "test";
+    }
+
 
     /**
      * @param map 前台传入的map
@@ -253,5 +230,40 @@ public class TestService {
             }
         }
         jpqlStr.replace(jpqlStr.length() - 1, jpqlStr.length(), " ");
+    }
+
+
+    private List<ExtendedConfigDetail> getExtendedConfigDetails(BusinessType businessType) {
+        //2.查询ExtendedConfigDetail
+        String queryDetailStr = "select d from " + EX_CONFIG_DETAIL + " d, " + EX_CONFIG_MAIN + " m" +
+                " where m.id = d.extendedMainId and m.businessCode = :businessCode";
+        Map<String, Object> exParamMap = new HashMap<>();
+        exParamMap.put("businessCode", businessType.getCode());
+        List<ExtendedConfigDetail> exConfigDetailList = testRepository.findList(queryDetailStr, exParamMap);
+
+        //对查询的exConfigDetailList做检查
+        if (exConfigDetailList == null) {
+            throw new RuntimeException("查询的扩展从配置表为空");
+        }
+        return exConfigDetailList;
+    }
+
+    private List<ExtendedConfigMain> getExtendedConfigMains(BusinessType businessType) {
+        //1.查询ExtendedConfigMain
+        String queryMainStr = "select m from " + EX_CONFIG_MAIN + " m  where businessCode = :businessCode";
+        Map<String, Object> exParamMap = new HashMap<>();
+        exParamMap.put("businessCode", businessType.getCode());
+        List<ExtendedConfigMain> exConfigMainList = testRepository.findList(queryMainStr, exParamMap);
+
+        //对查询的exConfigMainList做检查
+        if (exConfigMainList == null) {
+            throw new RuntimeException("查询的扩展主配置表为空");
+        }
+        if (exConfigMainList.size() != 2) {
+            throw new RuntimeException("扩展主配置表的配置有误，请检查\n\t" +
+                    "可能原因：同一业务代码配置记录数不等于2\n\t配置表查询的数据: " +
+                    exConfigMainList.toString());
+        }
+        return exConfigMainList;
     }
 }
