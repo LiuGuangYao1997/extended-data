@@ -43,56 +43,41 @@ public class TestService {
 
     private Logger logger = LoggerFactory.getLogger(TestService.class);
 
-    public List<Map<String, Object>> queryDataWithExt(BusinessType businessType) {
-
+    public Map<String, Object> queryDetailWithExt(BusinessType businessType, Long id){
+        if (id == null){
+            throw new RuntimeException("请传入非空的id值");
+        }
         List<ExtendedDataEntity> exConfigEntityList = getExtendedDataEntitys(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
-        ExtendedDataEntity extDataEntity = new ExtendedDataEntity();
-
+        ExtendedDataEntity extDataEntity;
         if (exConfigEntityList == null || exConfigEntityList.size() != 1) {
             throw new RuntimeException("在扩展数据实体表中查询不到数据相关的配置记录");
         } else {
             extDataEntity = exConfigEntityList.get(0);
         }
 
-        //3.根据查询出来的扩展表配置记录，拼接jpql语句
-        StringBuilder jpqlStr = new StringBuilder();
-
-        //(1). 拼接 form之前的语句
-        jpqlStr.append("select new map(");
-        for (ExtendedDataFiled configFiled : exConfigFiledList) {
-            // 如果是主表字段
-            if (configFiled.getIsMainEntityFiled() == 1) {
-                jpqlStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
-                        .append(configFiled.getFiledName()).append(" as ")
-                        .append(configFiled.getFiledAlias()).append(",");
-            }
-            // 如果是扩展表字段
-            if (configFiled.getIsMainEntityFiled() == 0) {
-                jpqlStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
-                        .append(configFiled.getFiledName()).append(" as ")
-                        .append(configFiled.getFiledAlias()).append(",");
-            }
+        String jpqlStr = queryDataWithExt(businessType, exConfigEntityList, exConfigFiledList, extDataEntity);
+        jpqlStr = jpqlStr + " and " + extDataEntity.getMainEntityAlias() + "."
+                + extDataEntity.getMainEntityPrimarykey() + "=:id";
+        HashMap<String, Object> paramMap = new HashMap<>();
+        paramMap.put("id", id);
+        List list = testRepository.findList(jpqlStr, paramMap);
+        if (list != null && list.size() == 1){
+            return (Map<String, Object>) list.get(0);
         }
+        return null;
+    }
 
-        jpqlStr.replace(jpqlStr.length() - 1, jpqlStr.length(), ") ");
-
-        //(2). 拼接 from之后，where之前的语句
-        jpqlStr.append("from ").append(extDataEntity.getMainEntityName()).append(" ")
-                .append(extDataEntity.getMainEntityAlias()).append(", ").append(extDataEntity.getExtEntityName())
-                .append(" ").append(extDataEntity.getExtEntityAlias()).append(" ");
-
-        //(3). 拼接where 之后的语句
-        jpqlStr.append("where ").append(extDataEntity.getMainEntityAlias()).append(".")
-                .append(extDataEntity.getMainEntityPrimarykey()).append("=").append(extDataEntity.getExtEntityAlias())
-                .append(".").append(extDataEntity.getExtEntityForeignkey()).append(" ");
-
-        //4.调用持久层，执行jpql语句
-        List<Map<String, Object>> list = testRepository.findList(jpqlStr.toString(), null);
-        logger.debug("搜索的结果为： ");
-        logger.debug(list.toString());
-
-        return list;
+    public List<Map<String, Object>> queryTableWithExt(BusinessType businessType){
+        List<ExtendedDataEntity> exConfigEntityList = getExtendedDataEntitys(businessType);
+        List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
+        ExtendedDataEntity extDataEntity = new ExtendedDataEntity();
+        if (exConfigEntityList == null || exConfigEntityList.size() != 1) {
+            throw new RuntimeException("在扩展数据实体表中查询不到数据相关的配置记录");
+        } else {
+            extDataEntity = exConfigEntityList.get(0);
+        }
+        return null;
     }
 
     @Transactional
@@ -104,33 +89,30 @@ public class TestService {
 
         //查询扩展配置实体表信息
         List<ExtendedDataEntity> exConfigEntityList = getExtendedDataEntitys(businessType);
-        ExtendedDataEntity extDataEntity = new ExtendedDataEntity();
+        ExtendedDataEntity extDataEntity;
         if (exConfigEntityList == null || exConfigEntityList.size() != 1) {
             throw new RuntimeException("在扩展数据实体表中查询不到数据相关的配置记录");
         } else {
             extDataEntity = exConfigEntityList.get(0);
         }
 
-        StringBuilder jpqlMainStr = new StringBuilder();
-        StringBuilder jpqlExtendedStr = new StringBuilder();
 
-        //拼接主表的删除语句
-        jpqlMainStr.append("delete ").append(extDataEntity.getMainEntityName()).append(" ")
-                .append(extDataEntity.getMainEntityAlias()).append(" where ").append(extDataEntity.getMainEntityAlias())
-                .append(".").append(extDataEntity.getMainEntityPrimarykey()).append("=:paramId");
 
-        //拼接从表的删除语句
-        jpqlExtendedStr.append("delete ").append(extDataEntity.getExtEntityName()).append(" ")
-                .append(extDataEntity.getExtEntityAlias()).append(" where ").append(extDataEntity.getExtEntityAlias())
-                .append(".").append(extDataEntity.getExtEntityForeignkey()).append("=:paramId");
+
 
         HashMap<String, Object> map = new HashMap<>();
         map.put("paramId", id);
 
-        //先删除扩展表记录
-        int exRows = testRepository.executeUpdate(jpqlExtendedStr.toString(), map);
-        //再删除主表记录
-        int MainRows = testRepository.executeUpdate(jpqlMainStr.toString(), map);
+        //拼接从表的删除语句
+        String jpqlExtendedStr = "delete " + extDataEntity.getExtEntityName() + " " +
+                extDataEntity.getExtEntityAlias() + " where " + extDataEntity.getExtEntityAlias() +
+                "." + extDataEntity.getExtEntityForeignkey() + "=:paramId";
+        int exRows = testRepository.executeUpdate(jpqlExtendedStr, map);
+        //拼接主表的删除语句
+        String jpqlMainStr = "delete " + extDataEntity.getMainEntityName() + " " +
+                extDataEntity.getMainEntityAlias() + " where " + extDataEntity.getMainEntityAlias() +
+                "." + extDataEntity.getMainEntityPrimarykey() + "=:paramId";
+        int MainRows = testRepository.executeUpdate(jpqlMainStr, map);
 
         return "删除主表记录数: " + MainRows + "; 删除扩展表记录数: " + exRows;
     }
@@ -146,7 +128,7 @@ public class TestService {
         //查询扩展配置实体表信息
         List<ExtendedDataEntity> exConfigEntityList = getExtendedDataEntitys(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
-        ExtendedDataEntity extDataEntity = new ExtendedDataEntity();
+        ExtendedDataEntity extDataEntity;
         if (exConfigEntityList == null || exConfigEntityList.size() != 1) {
             throw new RuntimeException("在扩展数据实体表中查询不到数据相关的配置记录");
         } else {
@@ -279,5 +261,45 @@ public class TestService {
                     exConfigMainList.toString());
         }
         return exConfigMainList;
+    }
+
+    public String queryDataWithExt(BusinessType businessType,
+                                   List<ExtendedDataEntity> exConfigEntityList,
+                                   List<ExtendedDataFiled> exConfigFiledList,
+                                   ExtendedDataEntity extDataEntity) {
+
+        //根据查询出来的扩展表配置记录，拼接jpql语句
+        StringBuilder jpqlStr = new StringBuilder();
+
+        //(1). 拼接 form之前的语句
+        jpqlStr.append("select new map(");
+        for (ExtendedDataFiled configFiled : exConfigFiledList) {
+            // 如果是主表字段
+            if (configFiled.getIsMainEntityFiled() == 1) {
+                jpqlStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
+                        .append(configFiled.getFiledName()).append(" as ")
+                        .append(configFiled.getFiledAlias()).append(",");
+            }
+            // 如果是扩展表字段
+            if (configFiled.getIsMainEntityFiled() == 0) {
+                jpqlStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
+                        .append(configFiled.getFiledName()).append(" as ")
+                        .append(configFiled.getFiledAlias()).append(",");
+            }
+        }
+
+        jpqlStr.replace(jpqlStr.length() - 1, jpqlStr.length(), ") ");
+
+        //(2). 拼接 from之后，where之前的语句
+        jpqlStr.append("from ").append(extDataEntity.getMainEntityName()).append(" ")
+                .append(extDataEntity.getMainEntityAlias()).append(", ").append(extDataEntity.getExtEntityName())
+                .append(" ").append(extDataEntity.getExtEntityAlias()).append(" ");
+
+        //(3). 拼接where 之后的语句
+        jpqlStr.append("where ").append(extDataEntity.getMainEntityAlias()).append(".")
+                .append(extDataEntity.getMainEntityPrimarykey()).append("=").append(extDataEntity.getExtEntityAlias())
+                .append(".").append(extDataEntity.getExtEntityForeignkey()).append(" ");
+
+        return jpqlStr.toString();
     }
 }
