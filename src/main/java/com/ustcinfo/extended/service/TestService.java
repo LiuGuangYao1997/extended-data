@@ -176,9 +176,9 @@ public class TestService {
         int extUpdRows = 0;
 
         for (ExtendedDataFiled filed : exConfigFiledList) {
-            if (filed.getIsMainEntityFiled() == 1 && map.containsKey(filed.getFiledName())){
+            if (filed.getIsMainEntityFiled() == 1 && map.containsKey(filed.getFiledName())) {
                 mainParamNum++;
-            }else if (filed.getIsMainEntityFiled() == 0 && map.containsKey(filed.getFiledName())) {
+            } else if (filed.getIsMainEntityFiled() == 0 && map.containsKey(filed.getFiledName())) {
                 extParamNum++;
             }
         }
@@ -186,45 +186,49 @@ public class TestService {
 
         // 拼接主表更新语句
 
-        if(mainParamNum > 0){
+        if (mainParamNum > 0) {
             //拼接where之前的字符串
             jpqlMainStr.append("update ").append(extDataEntity.getMainEntityName()).append(" ")
                     .append(extDataEntity.getMainEntityAlias()).append(" set");
             for (ExtendedDataFiled filed : exConfigFiledList) {
-                if (filed.getIsMainEntityFiled() == 1){
-                    //TODO 判断更新值是否为空， 如果为空就不更新
-                    jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
-                            .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
-                    if (map.get(filed.getFiledName()) instanceof Integer){
-                        mainParamMap.put(filed.getFiledName(), new Long(map.get(filed.getFiledName()).toString()));
-                    } else {
-                        mainParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
+                if (filed.getIsMainEntityFiled() == 1) {
+                    //DONE 判断更新值是否为空， 如果为空就不更新
+                    if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null){
+                        jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
+                                .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
+                        if (map.get(filed.getFiledName()) instanceof Integer) {
+                            mainParamMap.put(filed.getFiledName(), new Long(map.get(filed.getFiledName()).toString()));
+                        } else {
+                            mainParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
+                        }
                     }
                 }
             }
-            jpqlMainStr.replace(jpqlMainStr.length()-1, jpqlMainStr.length(), " ");
+            jpqlMainStr.replace(jpqlMainStr.length() - 1, jpqlMainStr.length(), " ");
             //拼接where之后的字符串，下同
             jpqlMainStr.append("where ").append(extDataEntity.getMainEntityAlias()).append(".")
                     .append(mainEntityPrimarykey).append("=:")
                     .append(mainEntityPrimarykey);
             mainUpdRows = testRepository.executeUpdate(jpqlMainStr.toString(), mainParamMap);
         }
-        if (extParamNum > 0){
+        if (extParamNum > 0) {
             // 拼接从表更新语句
             jpqlExtendedStr.append("update ").append(extDataEntity.getExtEntityName()).append(" ")
                     .append(extDataEntity.getExtEntityAlias()).append(" set");
             for (ExtendedDataFiled filed : exConfigFiledList) {
-                if (filed.getIsMainEntityFiled() == 0){
-                    jpqlExtendedStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
-                            .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
-                    if (map.get(filed.getFiledName()) instanceof Integer){
-                        extendedParamMap.put(filed.getFiledName(), new Long(map.get(filed.getFiledName()).toString()));
-                    } else {
-                        extendedParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
+                if (filed.getIsMainEntityFiled() == 0) {
+                    if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null){
+                        jpqlExtendedStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
+                                .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
+                        if (map.get(filed.getFiledName()) instanceof Integer) {
+                            extendedParamMap.put(filed.getFiledName(), new Long(map.get(filed.getFiledName()).toString()));
+                        } else {
+                            extendedParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
+                        }
                     }
                 }
             }
-            jpqlExtendedStr.replace(jpqlExtendedStr.length()-1, jpqlExtendedStr.length(), " ");
+            jpqlExtendedStr.replace(jpqlExtendedStr.length() - 1, jpqlExtendedStr.length(), " ");
             jpqlExtendedStr.append("where ").append(extDataEntity.getExtEntityAlias()).append(".")
                     .append(extDataEntity.getExtEntityForeignkey()).append("=:")
                     .append(mainEntityPrimarykey);
@@ -246,7 +250,7 @@ public class TestService {
     private List<ExtendedDataFiled> getExtendedDataFileds(BusinessType businessType) {
         //2.查询ExtendedDataFiled
         String queryDetailStr = "select d from " + EX_CONFIG_FILED + " d, " + EX_CONFIG_ENTITY + " m" +
-                " where m." + EXT_ENTITY_PRIMARYKEY +" = d." + EXT_FILED_FOREIGNKEY + " and m." + DATA_TYPE_CODE + " = :businessCode";
+                " where m." + EXT_ENTITY_PRIMARYKEY + " = d." + EXT_FILED_FOREIGNKEY + " and m." + DATA_TYPE_CODE + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<>();
         exParamMap.put("businessCode", businessType.getCode());
         List<ExtendedDataFiled> exConfigDetailList = testRepository.findList(queryDetailStr, exParamMap);
