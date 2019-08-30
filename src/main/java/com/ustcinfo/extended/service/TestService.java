@@ -23,15 +23,20 @@ import java.util.Map;
 @Service
 public class TestService {
 
-    /**
-     * 扩展字段配置表主表实体名
-     */
+    // 扩展字段配置表主表实体名
     private static final String EX_CONFIG_ENTITY = ExtendedDataEntity.class.getSimpleName();
 
-    /**
-     * 扩展字段配置表从表实体名
-     */
+    // 扩展字段配置表从表实体名
     private static final String EX_CONFIG_FILED = ExtendedDataFiled.class.getSimpleName();
+
+    // 数据类型属性名称
+    private static final String DATA_TYPE_CODE = "dataTypeCode";
+
+    // 扩展配置实体表主键属性名
+    private static final String EXT_ENTITY_PRIMARYKEY = "id";
+
+    // 扩展配置字段表外键键属性名
+    private static final String EXT_FILED_FOREIGNKEY = "extEntityId";
 
     @Autowired
     private TestRepository testRepository;
@@ -187,6 +192,7 @@ public class TestService {
                     .append(extDataEntity.getMainEntityAlias()).append(" set");
             for (ExtendedDataFiled filed : exConfigFiledList) {
                 if (filed.getIsMainEntityFiled() == 1){
+                    //TODO 判断更新值是否为空， 如果为空就不更新
                     jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
                             .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
                     if (map.get(filed.getFiledName()) instanceof Integer){
@@ -240,7 +246,7 @@ public class TestService {
     private List<ExtendedDataFiled> getExtendedDataFileds(BusinessType businessType) {
         //2.查询ExtendedDataFiled
         String queryDetailStr = "select d from " + EX_CONFIG_FILED + " d, " + EX_CONFIG_ENTITY + " m" +
-                " where m.id = d.extEntityId and m.dataTypeCode = :businessCode";
+                " where m." + EXT_ENTITY_PRIMARYKEY +" = d." + EXT_FILED_FOREIGNKEY + " and m." + DATA_TYPE_CODE + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<>();
         exParamMap.put("businessCode", businessType.getCode());
         List<ExtendedDataFiled> exConfigDetailList = testRepository.findList(queryDetailStr, exParamMap);
@@ -254,7 +260,7 @@ public class TestService {
 
     private List<ExtendedDataEntity> getExtendedDataEntitys(BusinessType businessType) {
         //1.查询ExtendedDataEntity
-        String queryMainStr = "select m from " + EX_CONFIG_ENTITY + " m  where dataTypeCode = :businessCode";
+        String queryMainStr = "select m from " + EX_CONFIG_ENTITY + " m  where " + DATA_TYPE_CODE + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<>();
         exParamMap.put("businessCode", businessType.getCode());
         List<ExtendedDataEntity> exConfigMainList = testRepository.findList(queryMainStr, exParamMap);
