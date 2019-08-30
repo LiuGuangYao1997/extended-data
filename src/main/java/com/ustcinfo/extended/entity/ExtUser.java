@@ -22,6 +22,7 @@ public class ExtUser  implements Serializable {
 	/**
 	 * 关联主表ID
 	 */
+	@Id
    	@Column(name = "main_table_id" )
 	private Long mainTableId;
 

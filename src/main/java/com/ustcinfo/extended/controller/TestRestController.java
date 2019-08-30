@@ -8,9 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @RestController
 public class TestRestController {
@@ -26,7 +24,7 @@ public class TestRestController {
         if (Objects.equals(dataType, BusinessType.USER_INFO_SELECT_1.getCode())) {
             return testService.queryDataWithExt(BusinessType.USER_INFO_SELECT_1);
         } else {
-            return null;
+            return Arrays.asList("请确认您请求的数据代码是否正确");
         }
     }
 
