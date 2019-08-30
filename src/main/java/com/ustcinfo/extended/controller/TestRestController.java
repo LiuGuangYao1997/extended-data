@@ -36,7 +36,7 @@ public class TestRestController {
         if (Objects.equals(dataType, BusinessType.USER_INFO_SELECT_1.getCode())) {
             return testService.deleteDataWithExt(BusinessType.USER_INFO_SELECT_1, id);
         } else {
-            return null;
+            return "请确认您请求的数据代码是否正确";
         }
     }
 
@@ -48,7 +48,7 @@ public class TestRestController {
         if (Objects.equals(dataType, BusinessType.USER_INFO_SELECT_1.getCode())) {
             return testService.updateDataWithExt(BusinessType.USER_INFO_SELECT_1, map);
         } else {
-            return null;
+            return "请确认您请求的数据代码是否正确";
         }
     }
 }
