@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +26,13 @@ public class TestRepository {
      * @param map      参数map，key为参数名，value为参数值
      * @return List<Map   <   String   ,       Object>> map为实体对象 key为属性名，value为属性值
      */
-    public List findList(String qlString, Map<String, Object> map) {
-        Query query = setParameters(qlString, map);
+    public <T> List<T> findList(String qlString, Class<T> resultClass, Map<String, Object> map) {
+        TypedQuery<T> query = entityManager.createQuery(qlString, resultClass);
+        if (map != null) {
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                query.setParameter(entry.getKey(), entry.getValue());
+            }
+        }
         return query.getResultList();
     }
 
@@ -36,17 +42,12 @@ public class TestRepository {
      * @return 操作影响记录数
      */
     public int executeUpdate(String qlString, Map<String, Object> map) {
-        Query query = setParameters(qlString, map);
-        return query.executeUpdate();
-    }
-
-    private Query setParameters(String qlString, Map<String, Object> map) {
         Query query = entityManager.createQuery(qlString);
         if (map != null) {
             for (Map.Entry<String, Object> entry : map.entrySet()) {
                 query.setParameter(entry.getKey(), entry.getValue());
             }
         }
-        return query;
+        return query.executeUpdate();
     }
 }

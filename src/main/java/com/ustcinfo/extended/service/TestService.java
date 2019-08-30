@@ -43,7 +43,7 @@ public class TestService {
 
     private Logger logger = LoggerFactory.getLogger(TestService.class);
 
-    public Map<String, Object> queryDetailWithExt(BusinessType businessType, Long id){
+    public Map queryDetailWithExt(BusinessType businessType, Long id) {
         if (id == null){
             throw new RuntimeException("请传入非空的id值");
         }
@@ -56,14 +56,14 @@ public class TestService {
             extDataEntity = exConfigEntityList.get(0);
         }
 
-        String jpqlStr = queryDataWithExt(businessType, exConfigEntityList, exConfigFiledList, extDataEntity);
+        String jpqlStr = queryDataWithExt(exConfigFiledList, extDataEntity);
         jpqlStr = jpqlStr + " and " + extDataEntity.getMainEntityAlias() + "."
                 + extDataEntity.getMainEntityPrimarykey() + "=:id";
         HashMap<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", id);
-        List list = testRepository.findList(jpqlStr, paramMap);
+        List<Map> list = testRepository.findList(jpqlStr, Map.class, paramMap);
         if (list != null && list.size() == 1){
-            return (Map<String, Object>) list.get(0);
+            return list.get(0);
         }
         return null;
     }
@@ -95,10 +95,6 @@ public class TestService {
         } else {
             extDataEntity = exConfigEntityList.get(0);
         }
-
-
-
-
 
         HashMap<String, Object> map = new HashMap<>();
         map.put("paramId", id);
@@ -143,7 +139,6 @@ public class TestService {
         HashMap<String, Object> mainParamMap = new HashMap<>();
         HashMap<String, Object> extendedParamMap = new HashMap<>();
 
-
         //做一遍检查，要求传入的map中必须要有与数据主表属性名一致的key
         if (!map.containsKey(mainEntityPrimarykey)) {
             throw new RuntimeException("请在map中传入主数据表的" + mainEntityPrimarykey + "属性");
@@ -167,7 +162,6 @@ public class TestService {
         logger.info("传入总参数有" + map.size() + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个.");
 
         // 拼接主表更新语句
-
         if (mainParamNum > 0) {
             //拼接where之前的字符串
             jpqlMainStr.append("update ").append(extDataEntity.getMainEntityName()).append(" ")
@@ -235,7 +229,7 @@ public class TestService {
                 " where m." + EXT_ENTITY_PRIMARYKEY + " = d." + EXT_FILED_FOREIGNKEY + " and m." + DATA_TYPE_CODE + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<>();
         exParamMap.put("businessCode", businessType.getCode());
-        List<ExtendedDataFiled> exConfigDetailList = testRepository.findList(queryDetailStr, exParamMap);
+        List<ExtendedDataFiled> exConfigDetailList = testRepository.findList(queryDetailStr, ExtendedDataFiled.class, exParamMap);
 
         //对查询的exConfigDetailList做检查
         if (exConfigDetailList == null) {
@@ -249,7 +243,7 @@ public class TestService {
         String queryMainStr = "select m from " + EX_CONFIG_ENTITY + " m  where " + DATA_TYPE_CODE + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<>();
         exParamMap.put("businessCode", businessType.getCode());
-        List<ExtendedDataEntity> exConfigMainList = testRepository.findList(queryMainStr, exParamMap);
+        List<ExtendedDataEntity> exConfigMainList = testRepository.findList(queryMainStr, ExtendedDataEntity.class, exParamMap);
 
         //对查询的exConfigMainList做检查
         if (exConfigMainList == null) {
@@ -263,10 +257,8 @@ public class TestService {
         return exConfigMainList;
     }
 
-    public String queryDataWithExt(BusinessType businessType,
-                                   List<ExtendedDataEntity> exConfigEntityList,
-                                   List<ExtendedDataFiled> exConfigFiledList,
-                                   ExtendedDataEntity extDataEntity) {
+    private String queryDataWithExt(List<ExtendedDataFiled> exConfigFiledList,
+                                    ExtendedDataEntity extDataEntity) {
 
         //根据查询出来的扩展表配置记录，拼接jpql语句
         StringBuilder jpqlStr = new StringBuilder();
