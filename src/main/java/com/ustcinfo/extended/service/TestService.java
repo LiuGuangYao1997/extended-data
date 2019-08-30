@@ -61,7 +61,7 @@ public class TestService {
                 + extDataEntity.getMainEntityPrimarykey() + "=:id";
         HashMap<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", id);
-        List<Map> list = testRepository.findList(jpqlStr, Map.class, paramMap);
+        List<Map> list = testRepository.findList(jpqlStr, Map.class, paramMap, null);
         if (list != null && list.size() == 1){
             return list.get(0);
         }
@@ -226,10 +226,12 @@ public class TestService {
     private List<ExtendedDataFiled> getExtendedDataFileds(BusinessType businessType) {
         //2.查询ExtendedDataFiled
         String queryDetailStr = "select d from " + EX_CONFIG_FILED + " d, " + EX_CONFIG_ENTITY + " m" +
-                " where m." + EXT_ENTITY_PRIMARYKEY + " = d." + EXT_FILED_FOREIGNKEY + " and m." + DATA_TYPE_CODE + " = :businessCode";
+                " where m." + EXT_ENTITY_PRIMARYKEY + " = d." + EXT_FILED_FOREIGNKEY + " and m." + DATA_TYPE_CODE
+                + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<>();
         exParamMap.put("businessCode", businessType.getCode());
-        List<ExtendedDataFiled> exConfigDetailList = testRepository.findList(queryDetailStr, ExtendedDataFiled.class, exParamMap);
+        List<ExtendedDataFiled> exConfigDetailList =
+                testRepository.findList(queryDetailStr, ExtendedDataFiled.class, exParamMap, null);
 
         //对查询的exConfigDetailList做检查
         if (exConfigDetailList == null) {
@@ -243,7 +245,8 @@ public class TestService {
         String queryMainStr = "select m from " + EX_CONFIG_ENTITY + " m  where " + DATA_TYPE_CODE + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<>();
         exParamMap.put("businessCode", businessType.getCode());
-        List<ExtendedDataEntity> exConfigMainList = testRepository.findList(queryMainStr, ExtendedDataEntity.class, exParamMap);
+        List<ExtendedDataEntity> exConfigMainList =
+                testRepository.findList(queryMainStr, ExtendedDataEntity.class, exParamMap, null);
 
         //对查询的exConfigMainList做检查
         if (exConfigMainList == null) {

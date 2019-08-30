@@ -1,6 +1,7 @@
 package com.ustcinfo.extended.repository;
 
 
+import com.ustcinfo.extended.common.Pagination;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -24,15 +25,20 @@ public class TestRepository {
     /**
      * @param qlString 带有参数占位符的JPQL语句
      * @param map      参数map，key为参数名，value为参数值
-     * @return List<Map   <   String   ,       Object>> map为实体对象 key为属性名，value为属性值
+     * @return List<Map               <               String               ,                               Object>> map为实体对象 key为属性名，value为属性值
      */
-    public <T> List<T> findList(String qlString, Class<T> resultClass, Map<String, Object> map) {
+    public <T> List<T> findList(String qlString, Class<T> resultClass, Map<String, Object> map, Pagination pagination) {
         TypedQuery<T> query = entityManager.createQuery(qlString, resultClass);
         if (map != null) {
             for (Map.Entry<String, Object> entry : map.entrySet()) {
                 query.setParameter(entry.getKey(), entry.getValue());
             }
         }
+        if (pagination != null) {
+            query.setFirstResult(pagination.start());
+            query.setMaxResults(pagination.getPerpage());
+        }
+
         return query.getResultList();
     }
 
