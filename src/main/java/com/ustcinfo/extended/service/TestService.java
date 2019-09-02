@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Field;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -85,10 +84,15 @@ public class TestService {
         if (queryParams != null) {
             for (QueryParam queryParam : queryParams) {
                 if (queryParam != null) {
-                    // TODO: 当是like的时候，判断是否为空字符串并在前后拼接%%
-                    queryParamStr.append(" and ").append(queryParam.getFiled())
-                            .append(queryParam.getLog()).append(" :").append(queryParam.getFiled()).append(" ");
-                    paramMap.put(queryParam.getFiled(), queryParam.getVal());
+                    queryParamStr.append(" and ").append(queryParam.getFiled()).append(" ")
+                            .append(queryParam.getLog()).append(" :");
+                    queryParamStr.append(queryParam.getFiled());
+                    queryParamStr.append(" ");
+                    if (Objects.equals(queryParam.getLog(), "like")) {
+                        paramMap.put(queryParam.getFiled(), "%" + queryParam.getVal() + "%");
+                    }else {
+                        paramMap.put(queryParam.getFiled(), queryParam.getVal());
+                    }
                 }
             }
         }
@@ -232,7 +236,7 @@ public class TestService {
 
     @Transactional
     public String insertDataWithExt(BusinessType businessType, Map<String, Object> map) {
-        if (map == null || map.isEmpty()){
+        if (map == null || map.isEmpty()) {
             throw new RuntimeException("添加时传入的map为空");
         }
         ExtendedDataEntity dataEntity = getExtendedDataEntity(businessType);
@@ -243,11 +247,11 @@ public class TestService {
             Object mainObject = mainClass.newInstance();
             Object extObject = extClass.newInstance();
             for (ExtendedDataFiled extendedDataFiled : fileds) {
-                if (map.containsKey(extendedDataFiled.getFiledName())){
-                    if (extendedDataFiled.getIsMainEntityFiled() == 1){
+                if (map.containsKey(extendedDataFiled.getFiledName())) {
+                    if (extendedDataFiled.getIsMainEntityFiled() == 1) {
                         setInokeFiled(map, mainClass, mainObject, extendedDataFiled);
                     }
-                    if (extendedDataFiled.getIsMainEntityFiled() == 0){
+                    if (extendedDataFiled.getIsMainEntityFiled() == 0) {
                         setInokeFiled(map, extClass, extObject, extendedDataFiled);
                     }
                 }
@@ -283,18 +287,18 @@ public class TestService {
         Field field = inokeClass.getDeclaredField(extendedDataFiled.getFiledName());
         field.setAccessible(true);
         String simpleName = field.getType().getSimpleName();
-        if (Objects.equals("Long", simpleName)){
+        if (Objects.equals("Long", simpleName)) {
             field.set(inokeObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-        }else if (Objects.equals("String", simpleName)){
+        } else if (Objects.equals("String", simpleName)) {
             field.set(inokeObject, map.get(extendedDataFiled.getFiledName()));
-        }else if (Objects.equals("Integer", simpleName)){
+        } else if (Objects.equals("Integer", simpleName)) {
             field.set(inokeObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-        }else if (Objects.equals("Date", simpleName)){
+        } else if (Objects.equals("Date", simpleName)) {
             Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
-            field.set(inokeObject,temp);
-        }else if (Objects.equals("Boolean", simpleName)){
+            field.set(inokeObject, temp);
+        } else if (Objects.equals("Boolean", simpleName)) {
             field.set(inokeObject, Boolean.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-        }else if (Objects.equals("Double", simpleName)){
+        } else if (Objects.equals("Double", simpleName)) {
             field.set(inokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
         }
     }
@@ -380,7 +384,7 @@ public class TestService {
      * @param datestr
      * @return date
      */
-    public  Date parseDate(String datestr) {
+    public Date parseDate(String datestr) {
         if (null == datestr || "".equals(datestr)) {
             return null;
         }
