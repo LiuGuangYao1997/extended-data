@@ -81,19 +81,12 @@ public class TestService {
 
         HashMap<String, Object> paramMap = new HashMap<>();
 
-        // 将字段名抽取出，作为一个单独的列表
-        ArrayList<String> filedNamesList = new ArrayList<>();
-        for (ExtendedDataFiled filed : exConfigFiledList) {
-            String filedName = filed.getFiledName();
-            filedNamesList.add(filedName);
-        }
 
         // 拼接查询条件
         StringBuilder queryParamStr = new StringBuilder();
         if (queryParams != null){
             for (QueryParam queryParam : queryParams) {
-                // 做这个判断，不为空并且filed属性是在配置表的别名列表中，防止sql恶意注入
-                if (queryParam != null && filedNamesList.contains(queryParam.getFiled())){
+                if (queryParam != null){
                     queryParamStr.append(" and ").append(queryParam.getFiled())
                             .append(queryParam.getLog()).append(" :").append(queryParam.getFiled()).append(" ");
                     paramMap.put(queryParam.getFiled(), queryParam.getVal());
