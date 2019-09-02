@@ -9,15 +9,15 @@ import java.io.Serializable;
 
 /**
  * @Description  
- * @Author  idea
- * @Date 2019-08-30 
+ * @Author  liu.guangyao@ustcinfo.com
+ * @Date 2019-09-02 
  */
 
 @Entity
 @Table ( name ="extended_data_entity" , schema = "")
 public class ExtendedDataEntity  implements Serializable {
 
-	private static final long serialVersionUID =  980649498181756634L;
+	private static final long serialVersionUID =  6592417078367537176L;
 
 	/**
 	 * ID
@@ -25,6 +25,12 @@ public class ExtendedDataEntity  implements Serializable {
 	@Id
    	@Column(name = "id" )
 	private Long id;
+
+	/**
+	 * 主实体类完整包名
+	 */
+   	@Column(name = "main_entity_package" )
+	private String mainEntityPackage;
 
 	/**
 	 * 主实体名
@@ -43,6 +49,12 @@ public class ExtendedDataEntity  implements Serializable {
 	 */
    	@Column(name = "main_entity_primarykey" )
 	private String mainEntityPrimarykey;
+
+	/**
+	 * 扩展实体类完整包名
+	 */
+   	@Column(name = "ext_entity_package" )
+	private String extEntityPackage;
 
 	/**
 	 * 扩展实体名
@@ -82,6 +94,14 @@ public class ExtendedDataEntity  implements Serializable {
 		this.id = id;
 	}
 
+	public String getMainEntityPackage() {
+		return this.mainEntityPackage;
+	}
+
+	public void setMainEntityPackage(String mainEntityPackage) {
+		this.mainEntityPackage = mainEntityPackage;
+	}
+
 	public String getMainEntityName() {
 		return this.mainEntityName;
 	}
@@ -104,6 +124,14 @@ public class ExtendedDataEntity  implements Serializable {
 
 	public void setMainEntityPrimarykey(String mainEntityPrimarykey) {
 		this.mainEntityPrimarykey = mainEntityPrimarykey;
+	}
+
+	public String getExtEntityPackage() {
+		return this.extEntityPackage;
+	}
+
+	public void setExtEntityPackage(String extEntityPackage) {
+		this.extEntityPackage = extEntityPackage;
 	}
 
 	public String getExtEntityName() {
@@ -150,9 +178,11 @@ public class ExtendedDataEntity  implements Serializable {
 	public String toString() {
 		return "TpApiConfig{" +
 				"id='" + id + '\'' +
+				"mainEntityPackage='" + mainEntityPackage + '\'' +
 				"mainEntityName='" + mainEntityName + '\'' +
 				"mainEntityAlias='" + mainEntityAlias + '\'' +
 				"mainEntityPrimarykey='" + mainEntityPrimarykey + '\'' +
+				"extEntityPackage='" + extEntityPackage + '\'' +
 				"extEntityName='" + extEntityName + '\'' +
 				"extEntityAlias='" + extEntityAlias + '\'' +
 				"extEntityForeignkey='" + extEntityForeignkey + '\'' +
