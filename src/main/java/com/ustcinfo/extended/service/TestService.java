@@ -44,7 +44,7 @@ public class TestService {
     private Logger logger = LoggerFactory.getLogger(TestService.class);
 
     public Map queryDetailWithExt(BusinessType businessType, Long id) {
-        if (id == null){
+        if (id == null) {
             throw new RuntimeException("请传入非空的id值");
         }
         List<ExtendedDataEntity> exConfigEntityList = getExtendedDataEntitys(businessType);
@@ -62,13 +62,16 @@ public class TestService {
         HashMap<String, Object> paramMap = new HashMap<>();
         paramMap.put("id", id);
         List<Map> list = testRepository.findList(jpqlStr, Map.class, paramMap, null);
-        if (list != null && list.size() == 1){
-            return list.get(0);
+        if (list == null) {
+            throw new RuntimeException("查询结果为空");
         }
-        return null;
+        if (list.size() == 1) {
+            throw new RuntimeException("查询结果不唯一");
+        }
+        return list.get(0);
     }
 
-    public List<Map<String, Object>> queryTableWithExt(BusinessType businessType){
+    public List<Map<String, Object>> queryTableWithExt(BusinessType businessType) {
         List<ExtendedDataEntity> exConfigEntityList = getExtendedDataEntitys(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
         ExtendedDataEntity extDataEntity = new ExtendedDataEntity();
@@ -169,7 +172,7 @@ public class TestService {
             for (ExtendedDataFiled filed : exConfigFiledList) {
                 if (filed.getIsMainEntityFiled() == 1) {
                     //DONE 判断更新值是否为空， 如果为空就不更新
-                    if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null){
+                    if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
                         jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
                                 .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
                         if (map.get(filed.getFiledName()) instanceof Integer) {
@@ -193,7 +196,7 @@ public class TestService {
                     .append(extDataEntity.getExtEntityAlias()).append(" set");
             for (ExtendedDataFiled filed : exConfigFiledList) {
                 if (filed.getIsMainEntityFiled() == 0) {
-                    if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null){
+                    if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
                         jpqlExtendedStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
                                 .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
                         if (map.get(filed.getFiledName()) instanceof Integer) {

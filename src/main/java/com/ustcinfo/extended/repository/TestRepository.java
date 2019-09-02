@@ -25,7 +25,7 @@ public class TestRepository {
     /**
      * @param qlString 带有参数占位符的JPQL语句
      * @param map      参数map，key为参数名，value为参数值
-     * @return List<Map               <               String               ,                               Object>> map为实体对象 key为属性名，value为属性值
+     * @return List<Map < String ,   Object>> map为实体对象 key为属性名，value为属性值
      */
     public <T> List<T> findList(String qlString, Class<T> resultClass, Map<String, Object> map, Pagination pagination) {
         TypedQuery<T> query = entityManager.createQuery(qlString, resultClass);
@@ -38,6 +38,7 @@ public class TestRepository {
             query.setFirstResult(pagination.start());
             query.setMaxResults(pagination.getPerpage());
         }
+        query.setHint("javax.persistence.query.timeout", 5000);
 
         return query.getResultList();
     }
