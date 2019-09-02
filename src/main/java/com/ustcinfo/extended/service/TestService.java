@@ -245,35 +245,10 @@ public class TestService {
             for (ExtendedDataFiled extendedDataFiled : fileds) {
                 if (map.containsKey(extendedDataFiled.getFiledName())){
                     if (extendedDataFiled.getIsMainEntityFiled() == 1){
-                        Field field = mainClass.getDeclaredField(extendedDataFiled.getFiledName());
-                        field.setAccessible(true);
-                        String simpleName = field.getType().getSimpleName();
-                        // TODO: 反射时的类型判断
-                        if (Objects.equals("Long", simpleName)){
-                            field.set(mainObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-                        }else if (Objects.equals("String", simpleName)){
-                            field.set(mainObject, map.get(extendedDataFiled.getFiledName()));
-                        }else if (Objects.equals("Integer", simpleName)){
-                            field.set(mainObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-                        }else if (Objects.equals("Date", simpleName)){
-                            Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
-                            field.set(mainObject,temp);
-                        }
+                        setInokeFiled(map, mainClass, mainObject, extendedDataFiled);
                     }
                     if (extendedDataFiled.getIsMainEntityFiled() == 0){
-                        Field field = extClass.getDeclaredField(extendedDataFiled.getFiledName());
-                        field.setAccessible(true);
-                        String simpleName = field.getType().getSimpleName();
-                        if (Objects.equals("Long", simpleName)){
-                            field.set(extObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-                        }else if (Objects.equals("String", simpleName)){
-                            field.set(extObject, map.get(extendedDataFiled.getFiledName()));
-                        }else if (Objects.equals("Integer", simpleName)){
-                            field.set(extObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-                        }else if (Objects.equals("Date", simpleName)){
-                            Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
-                            field.set(extObject,temp);
-                        }
+                        setInokeFiled(map, extClass, extObject, extendedDataFiled);
                     }
                 }
             }
@@ -302,6 +277,26 @@ public class TestService {
             e.printStackTrace();
         }
         return "ok";
+    }
+
+    private void setInokeFiled(Map<String, Object> map, Class<?> inokeClass, Object inokeObject, ExtendedDataFiled extendedDataFiled) throws NoSuchFieldException, IllegalAccessException {
+        Field field = inokeClass.getDeclaredField(extendedDataFiled.getFiledName());
+        field.setAccessible(true);
+        String simpleName = field.getType().getSimpleName();
+        if (Objects.equals("Long", simpleName)){
+            field.set(inokeObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+        }else if (Objects.equals("String", simpleName)){
+            field.set(inokeObject, map.get(extendedDataFiled.getFiledName()));
+        }else if (Objects.equals("Integer", simpleName)){
+            field.set(inokeObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+        }else if (Objects.equals("Date", simpleName)){
+            Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
+            field.set(inokeObject,temp);
+        }else if (Objects.equals("Boolean", simpleName)){
+            field.set(inokeObject, Boolean.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+        }else if (Objects.equals("Double", simpleName)){
+            field.set(inokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+        }
     }
 
     private List<ExtendedDataFiled> getExtendedDataFileds(BusinessType businessType) {
