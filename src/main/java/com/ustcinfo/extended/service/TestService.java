@@ -2,6 +2,7 @@ package com.ustcinfo.extended.service;
 
 
 import com.ustcinfo.extended.common.BusinessType;
+import com.ustcinfo.extended.common.OrderParam;
 import com.ustcinfo.extended.common.Pagination;
 import com.ustcinfo.extended.common.QueryParam;
 import com.ustcinfo.extended.entity.ExtendedDataEntity;
@@ -71,7 +72,7 @@ public class TestService {
     public List<Map<String, Object>> queryTableWithExt(BusinessType businessType,
                                                        Pagination pagination,
                                                        List<QueryParam> queryParams,
-                                                       List<Map<String,Object>> orderMap) {
+                                                       List<OrderParam> orderParams) {
 
         ExtendedDataEntity extDataEntity = getExtendedDataEntitys(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
@@ -91,10 +92,10 @@ public class TestService {
 
         // 拼接排序条件
         StringBuilder orderStr = new StringBuilder();
-        if (orderMap != null){
+        if (orderParams != null){
             orderStr.append(" order by ");
-            for (Map<String, Object> map : orderMap) {
-                orderStr.append(map.get("filed")).append(" ").append(map.get("esc")).append(", ");
+            for (OrderParam orderParam : orderParams) {
+                orderStr.append(orderParam.getFiled()).append(" ").append(orderParam.getOrder()).append(", ");
             }
             orderStr.replace(orderStr.length()-2, orderStr.length(), " ");
         }
