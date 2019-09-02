@@ -1,6 +1,8 @@
 package com.ustcinfo.extended.controller;
 
 import com.ustcinfo.extended.common.BusinessType;
+import com.ustcinfo.extended.entity.ExtUser;
+import com.ustcinfo.extended.entity.User;
 import com.ustcinfo.extended.service.TestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,6 +37,18 @@ public class TestRestController {
         }
         if (Objects.equals(dataType, BusinessType.USER_INFO_SELECT_1.getCode())) {
             return testService.updateDataWithExt(BusinessType.USER_INFO_SELECT_1, map);
+        } else {
+            return "请确认您请求的数据代码是否正确";
+        }
+    }
+
+    @RequestMapping("/test/extInsert/{dataType}")
+    public String extInsert(@PathVariable String dataType, @RequestBody Map<String, Object> map) {
+        if (Objects.equals(dataType, BusinessType.PRODUCT_INFO_SELECT_1.getCode())) {
+            return testService.insertDataWithExt(BusinessType.PRODUCT_INFO_SELECT_1, map);
+        }
+        if (Objects.equals(dataType, BusinessType.USER_INFO_SELECT_1.getCode())) {
+            return testService.insertDataWithExt(BusinessType.USER_INFO_SELECT_1, map);
         } else {
             return "请确认您请求的数据代码是否正确";
         }

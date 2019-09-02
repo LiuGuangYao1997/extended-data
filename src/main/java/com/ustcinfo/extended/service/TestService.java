@@ -15,9 +15,9 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * @author liu.guangyao@utscinfo.com
@@ -54,7 +54,6 @@ public class TestService {
         ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
 
-
         String jpqlStr = queryDataWithExt(exConfigFiledList, extDataEntity);
         jpqlStr = jpqlStr + " and " + extDataEntity.getMainEntityAlias() + "."
                 + extDataEntity.getMainEntityPrimarykey() + "=:id";
@@ -81,7 +80,6 @@ public class TestService {
 
         HashMap<String, Object> paramMap = new HashMap<>();
 
-        // TODO: 查询运算符，排序用枚举封装起来
         // 拼接查询条件
         StringBuilder queryParamStr = new StringBuilder();
         if (queryParams != null) {
@@ -107,7 +105,7 @@ public class TestService {
         }
         jpqlStr += orderStr.toString();
 
-        testRepository.findList(jpqlStr, Map.class, paramMap, null);
+        testRepository.findList(jpqlStr, Map.class, paramMap, pagination);
 
         return null;
     }
@@ -233,29 +231,76 @@ public class TestService {
     }
 
     @Transactional
-    public String insertDataWithExt(BusinessType businessType, Object mainObject, Object extObject) {
+    public String insertDataWithExt(BusinessType businessType, Map<String, Object> map) {
+        if (map == null || map.isEmpty()){
+            throw new RuntimeException("添加时传入的map为空");
+        }
         ExtendedDataEntity dataEntity = getExtendedDataEntity(businessType);
-        // 先保存主数据
-        testRepository.save(mainObject);
-        // 保存主数据后通过反射获取到它的id值
-        Object mainId = null;
+        List<ExtendedDataFiled> fileds = getExtendedDataFileds(businessType);
         try {
-            Field field = mainObject.getClass().getDeclaredField(dataEntity.getMainEntityPrimarykey());
-            field.setAccessible(true);
-            mainId = field.get(mainObject);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+            Class<?> mainClass = Class.forName(dataEntity.getMainEntityPackage() + "." + dataEntity.getMainEntityName());
+            Class<?> extClass = Class.forName(dataEntity.getExtEntityPackage() + "." + dataEntity.getExtEntityName());
+            Object mainObject = mainClass.newInstance();
+            Object extObject = extClass.newInstance();
+            for (ExtendedDataFiled extendedDataFiled : fileds) {
+                if (map.containsKey(extendedDataFiled.getFiledName())){
+                    if (extendedDataFiled.getIsMainEntityFiled() == 1){
+                        Field field = mainClass.getDeclaredField(extendedDataFiled.getFiledName());
+                        field.setAccessible(true);
+                        String simpleName = field.getType().getSimpleName();
+                        // TODO: 反射时的类型判断
+                        if (Objects.equals("Long", simpleName)){
+                            field.set(mainObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                        }else if (Objects.equals("String", simpleName)){
+                            field.set(mainObject, map.get(extendedDataFiled.getFiledName()));
+                        }else if (Objects.equals("Integer", simpleName)){
+                            field.set(mainObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                        }else if (Objects.equals("Date", simpleName)){
+                            Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
+                            field.set(mainObject,temp);
+                        }
+                    }
+                    if (extendedDataFiled.getIsMainEntityFiled() == 0){
+                        Field field = extClass.getDeclaredField(extendedDataFiled.getFiledName());
+                        field.setAccessible(true);
+                        String simpleName = field.getType().getSimpleName();
+                        if (Objects.equals("Long", simpleName)){
+                            field.set(extObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                        }else if (Objects.equals("String", simpleName)){
+                            field.set(extObject, map.get(extendedDataFiled.getFiledName()));
+                        }else if (Objects.equals("Integer", simpleName)){
+                            field.set(extObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                        }else if (Objects.equals("Date", simpleName)){
+                            Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
+                            field.set(extObject,temp);
+                        }
+                    }
+                }
+            }
+            // 先保存主数据
+            testRepository.save(mainObject);
+            // 保存主数据后通过反射获取到它的id值
+            Object mainId = null;
+            try {
+                Field field = mainClass.getDeclaredField(dataEntity.getMainEntityPrimarykey());
+                field.setAccessible(true);
+                mainId = field.get(mainObject);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            // 将主数据的id值赋值给扩展数据的外键属性
+            try {
+                Field field = extClass.getDeclaredField(dataEntity.getExtEntityForeignkey());
+                field.setAccessible(true);
+                field.set(extObject, mainId);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            // 保存扩展数据
+            testRepository.save(extObject);
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchFieldException e) {
             e.printStackTrace();
         }
-        // 将主数据的id值赋值给扩展数据的外键属性
-        try {
-            Field field = extObject.getClass().getDeclaredField(dataEntity.getExtEntityForeignkey());
-            field.setAccessible(true);
-            field.set(extObject, mainId);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        // 保存扩展数据
-        testRepository.save(extObject);
         return "ok";
     }
 
@@ -332,5 +377,29 @@ public class TestService {
                 .append(".").append(extDataEntity.getExtEntityForeignkey()).append(" ");
 
         return jpqlStr.toString();
+    }
+
+    /**
+     * 格式化string为Date
+     *
+     * @param datestr
+     * @return date
+     */
+    public  Date parseDate(String datestr) {
+        if (null == datestr || "".equals(datestr)) {
+            return null;
+        }
+        try {
+            String fmtstr = null;
+            if (datestr.indexOf(':') > 0) {
+                fmtstr = "yyyy-MM-dd HH:mm:ss";
+            } else {
+                fmtstr = "yyyy-MM-dd";
+            }
+            SimpleDateFormat sdf = new SimpleDateFormat(fmtstr, Locale.UK);
+            return sdf.parse(datestr);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
