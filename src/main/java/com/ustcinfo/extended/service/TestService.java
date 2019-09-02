@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +51,7 @@ public class TestService {
         if (id == null) {
             throw new RuntimeException("请传入非空的id值");
         }
-        ExtendedDataEntity extDataEntity = getExtendedDataEntitys(businessType);
+        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
 
 
@@ -75,18 +75,19 @@ public class TestService {
                                                        List<QueryParam> queryParams,
                                                        List<OrderParam> orderParams) {
 
-        ExtendedDataEntity extDataEntity = getExtendedDataEntitys(businessType);
+        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
         String jpqlStr = queryDataWithExt(exConfigFiledList, extDataEntity);
 
         HashMap<String, Object> paramMap = new HashMap<>();
 
-
+        // TODO: 查询运算符，排序用枚举封装起来
         // 拼接查询条件
         StringBuilder queryParamStr = new StringBuilder();
-        if (queryParams != null){
+        if (queryParams != null) {
             for (QueryParam queryParam : queryParams) {
-                if (queryParam != null){
+                if (queryParam != null) {
+                    // TODO: 当是like的时候，判断是否为空字符串并在前后拼接%%
                     queryParamStr.append(" and ").append(queryParam.getFiled())
                             .append(queryParam.getLog()).append(" :").append(queryParam.getFiled()).append(" ");
                     paramMap.put(queryParam.getFiled(), queryParam.getVal());
@@ -97,12 +98,12 @@ public class TestService {
 
         // 拼接排序条件
         StringBuilder orderStr = new StringBuilder();
-        if (orderParams != null){
+        if (orderParams != null) {
             orderStr.append(" order by ");
             for (OrderParam orderParam : orderParams) {
                 orderStr.append(orderParam.getFiled()).append(" ").append(orderParam.getOrder()).append(", ");
             }
-            orderStr.replace(orderStr.length()-2, orderStr.length(), " ");
+            orderStr.replace(orderStr.length() - 2, orderStr.length(), " ");
         }
         jpqlStr += orderStr.toString();
 
@@ -118,7 +119,7 @@ public class TestService {
         }
 
         //查询扩展配置实体表信息
-        ExtendedDataEntity extDataEntity = getExtendedDataEntitys(businessType);
+        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
 
         HashMap<String, Object> map = new HashMap<>();
         map.put("paramId", id);
@@ -146,7 +147,7 @@ public class TestService {
         }
 
         //查询扩展配置实体表信息
-        ExtendedDataEntity extDataEntity = getExtendedDataEntitys(businessType);
+        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
         String mainEntityPrimarykey = extDataEntity.getMainEntityPrimarykey();
 
@@ -233,8 +234,29 @@ public class TestService {
 
     @Transactional
     public String insertDataWithExt(BusinessType businessType, Object mainObject, Object extObject) {
-
-        return "test";
+        ExtendedDataEntity dataEntity = getExtendedDataEntity(businessType);
+        // 先保存主数据
+        testRepository.save(mainObject);
+        // 保存主数据后通过反射获取到它的id值
+        Object mainId = null;
+        try {
+            Field field = mainObject.getClass().getDeclaredField(dataEntity.getMainEntityPrimarykey());
+            field.setAccessible(true);
+            mainId = field.get(mainObject);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        // 将主数据的id值赋值给扩展数据的外键属性
+        try {
+            Field field = extObject.getClass().getDeclaredField(dataEntity.getExtEntityForeignkey());
+            field.setAccessible(true);
+            field.set(extObject, mainId);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        // 保存扩展数据
+        testRepository.save(extObject);
+        return "ok";
     }
 
     private List<ExtendedDataFiled> getExtendedDataFileds(BusinessType businessType) {
@@ -254,7 +276,7 @@ public class TestService {
         return exConfigDetailList;
     }
 
-    private ExtendedDataEntity getExtendedDataEntitys(BusinessType businessType) {
+    private ExtendedDataEntity getExtendedDataEntity(BusinessType businessType) {
         //1.查询ExtendedDataEntity
         String queryMainStr = "select m from " + EX_CONFIG_ENTITY + " m  where " + DATA_TYPE_CODE + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<>();

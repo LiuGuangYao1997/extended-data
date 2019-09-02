@@ -59,10 +59,7 @@ public class TestRepository {
         return query.executeUpdate();
     }
 
-    /**
-     * @param mainObject 主表对象
-     */
-    public Object save(Object mainObject){
-        return entityManager.merge(mainObject);
+    public void save(Object object){
+        entityManager.persist(object);
     }
 }
