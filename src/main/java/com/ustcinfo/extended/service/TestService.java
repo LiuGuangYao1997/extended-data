@@ -188,6 +188,15 @@ public class TestService {
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
         String mainEntityPrimarykey = extDataEntity.getMainEntityPrimarykey();
 
+        Class<?> mainClass = null;
+        Class<?> extClass = null;
+        try {
+            mainClass = Class.forName(extDataEntity.getMainEntityPackage() + "." + extDataEntity.getMainEntityName());
+            extClass = Class.forName(extDataEntity.getExtEntityPackage() + "." + extDataEntity.getExtEntityName());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
         StringBuilder jpqlMainStr = new StringBuilder();
         StringBuilder jpqlExtendedStr = new StringBuilder();
         //储存主表/从表更新绑定参数
@@ -195,11 +204,35 @@ public class TestService {
         HashMap<String, Object> extendedParamMap = new HashMap<>();
 
         //做一遍检查，要求传入的map中必须要有与数据主表属性名一致的key
+        //做一遍检查，要求传入的map中必须要有与数据主表属性名一致的key
         if (!map.containsKey(mainEntityPrimarykey)) {
             throw new RuntimeException("请在map中传入主数据表的" + mainEntityPrimarykey + "属性");
         } else {
-            mainParamMap.put(mainEntityPrimarykey, map.get(mainEntityPrimarykey));
-            extendedParamMap.put(mainEntityPrimarykey, map.get(mainEntityPrimarykey));
+            try {
+                if (mainClass != null) {
+                    Field field = mainClass.getDeclaredField(mainEntityPrimarykey);
+                    field.setAccessible(true);
+                    String simpleName = field.getType().getSimpleName();
+                    switch (simpleName) {
+                        case "Long":
+                            mainParamMap.put(mainEntityPrimarykey, Long.valueOf(map.get(mainEntityPrimarykey).toString()));
+                            extendedParamMap.put(mainEntityPrimarykey, Long.valueOf(map.get(mainEntityPrimarykey).toString()));
+                            break;
+                        case "String":
+                            mainParamMap.put(mainEntityPrimarykey, map.get(mainEntityPrimarykey));
+                            extendedParamMap.put(mainEntityPrimarykey, map.get(mainEntityPrimarykey));
+                            break;
+                        case "Integer":
+                            mainParamMap.put(mainEntityPrimarykey, Integer.valueOf(map.get(mainEntityPrimarykey).toString()));
+                            extendedParamMap.put(mainEntityPrimarykey, Integer.valueOf(map.get(mainEntityPrimarykey).toString()));
+                            break;
+                        default:
+                            throw new RuntimeException("主键的类型非Long、String、Integer");
+                    }
+                }
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            }
         }
         int mainParamNum = 0;
         int extParamNum = 0;
@@ -226,7 +259,7 @@ public class TestService {
                     if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
                         jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
                                 .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
-                        mainParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
+                        setUpdateParamMap(map, mainClass, mainParamMap, filed);
                     }
                 }
             }
@@ -250,6 +283,7 @@ public class TestService {
                         jpqlExtendedStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
                                 .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
                         extendedParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
+                        setUpdateParamMap(map, extClass, extendedParamMap, filed);
                     }
                 }
             }
@@ -264,6 +298,39 @@ public class TestService {
         }
         //return "更新主表记录数: " + mainUpdRows + "; 更新扩展表记录数: " + extUpdRows;
         return true;
+    }
+
+    private void setUpdateParamMap(Map<String, Object> map, Class<?> toUpdateClass, HashMap<String, Object> paramMap, ExtendedDataFiled filed) {
+        try {
+            if (toUpdateClass != null) {
+                Field field = toUpdateClass.getDeclaredField(filed.getFiledName());
+                field.setAccessible(true);
+                String simpleName = field.getType().getSimpleName();
+                switch (simpleName) {
+                    case "Long":
+                        paramMap.put(filed.getFiledName(), Long.valueOf(map.get(filed.getFiledName()).toString()));
+                        break;
+                    case "String":
+                        paramMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
+                        break;
+                    case "Integer":
+                        paramMap.put(filed.getFiledName(), Integer.valueOf(map.get(filed.getFiledName()).toString()));
+                        break;
+                    case "Date":
+                        Date temp = parseDate(map.get(filed.getFiledName()).toString());
+                        paramMap.put(filed.getFiledName(), temp);
+                        break;
+                    case "Boolean":
+                        paramMap.put(filed.getFiledName(), Boolean.valueOf(map.get(filed.getFiledName()).toString()));
+                        break;
+                    case "Double":
+                        paramMap.put(filed.getFiledName(), Double.valueOf(map.get(filed.getFiledName()).toString()));
+                        break;
+                }
+            }
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
