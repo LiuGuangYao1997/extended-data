@@ -63,7 +63,7 @@ public class TestService {
         String jpqlStr = queryDataWithExt(exConfigFiledList, extDataEntity);
         jpqlStr = jpqlStr + " and " + extDataEntity.getMainEntityAlias() + "."
                 + extDataEntity.getMainEntityPrimarykey() + "=:id";
-        HashMap<String, Object> paramMap = new HashMap<>();
+        HashMap<String, Object> paramMap = new HashMap<String, Object>();
         paramMap.put("id", id);
         List<Map> list = testRepository.findList(jpqlStr, Map.class, paramMap, null);
         if (list == null || list.size() == 0) {
@@ -93,7 +93,7 @@ public class TestService {
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
         String jpqlStr = queryDataWithExt(exConfigFiledList, extDataEntity);
 
-        HashMap<String, Object> paramMap = new HashMap<>();
+        HashMap<String, Object> paramMap = new HashMap<String, Object>();
 
         // 拼接查询条件
         StringBuilder queryParamStr = new StringBuilder();
@@ -144,7 +144,7 @@ public class TestService {
         //查询扩展配置实体表信息
         ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
 
-        HashMap<String, Object> map = new HashMap<>();
+        HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("paramId", id);
 
         //拼接从表的删除语句
@@ -198,8 +198,8 @@ public class TestService {
         StringBuilder jpqlMainStr = new StringBuilder();
         StringBuilder jpqlExtendedStr = new StringBuilder();
         //储存主表/从表更新绑定参数
-        HashMap<String, Object> mainParamMap = new HashMap<>();
-        HashMap<String, Object> extendedParamMap = new HashMap<>();
+        HashMap<String, Object> mainParamMap = new HashMap<String, Object>();
+        HashMap<String, Object> extendedParamMap = new HashMap<String, Object>();
 
         //做一遍检查，要求传入的map中必须要有与数据主表属性名一致的key
         //做一遍检查，要求传入的map中必须要有与数据主表属性名一致的key
@@ -433,7 +433,7 @@ public class TestService {
         String queryDetailStr = "select d from " + EX_CONFIG_FILED + " d, " + EX_CONFIG_ENTITY + " m" +
                 " where m." + EXT_ENTITY_PRIMARYKEY + " = d." + EXT_FILED_FOREIGNKEY + " and m." + DATA_TYPE_CODE
                 + " = :businessCode";
-        Map<String, Object> exParamMap = new HashMap<>();
+        Map<String, Object> exParamMap = new HashMap<String, Object>();
         exParamMap.put("businessCode", businessType.getCode());
         List<ExtendedDataFiled> exConfigDetailList =
                 testRepository.findList(queryDetailStr, ExtendedDataFiled.class, exParamMap, null);
@@ -454,7 +454,7 @@ public class TestService {
     private ExtendedDataEntity getExtendedDataEntity(BusinessType businessType) {
         //1.查询ExtendedDataEntity
         String queryMainStr = "select m from " + EX_CONFIG_ENTITY + " m  where " + DATA_TYPE_CODE + " = :businessCode";
-        Map<String, Object> exParamMap = new HashMap<>();
+        Map<String, Object> exParamMap = new HashMap<String, Object>();
         exParamMap.put("businessCode", businessType.getCode());
         List<ExtendedDataEntity> exConfigMainList =
                 testRepository.findList(queryMainStr, ExtendedDataEntity.class, exParamMap, null);
