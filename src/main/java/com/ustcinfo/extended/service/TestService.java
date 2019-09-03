@@ -125,9 +125,7 @@ public class TestService {
         }
         jpqlStr += orderStr.toString();
 
-        List<Map> list = testRepository.findList(jpqlStr, Map.class, paramMap, pagination);
-
-        return list;
+        return testRepository.findList(jpqlStr, Map.class, paramMap, pagination);
     }
 
     /**
@@ -236,8 +234,8 @@ public class TestService {
         }
         int mainParamNum = 0;
         int extParamNum = 0;
-        int mainUpdRows = 0;
-        int extUpdRows = 0;
+        int mainUpdRows;
+        int extUpdRows;
 
         for (ExtendedDataFiled filed : exConfigFiledList) {
             if (filed.getIsMainEntityFiled() == 1 && map.containsKey(filed.getFiledName())) {
@@ -402,19 +400,26 @@ public class TestService {
         Field field = invokeClass.getDeclaredField(extendedDataFiled.getFiledName());
         field.setAccessible(true);
         String simpleName = field.getType().getSimpleName();
-        if (Objects.equals("Long", simpleName)) {
-            field.set(invokeObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-        } else if (Objects.equals("String", simpleName)) {
-            field.set(invokeObject, map.get(extendedDataFiled.getFiledName()));
-        } else if (Objects.equals("Integer", simpleName)) {
-            field.set(invokeObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-        } else if (Objects.equals("Date", simpleName)) {
-            Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
-            field.set(invokeObject, temp);
-        } else if (Objects.equals("Boolean", simpleName)) {
-            field.set(invokeObject, Boolean.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-        } else if (Objects.equals("Double", simpleName)) {
-            field.set(invokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+        switch (simpleName) {
+            case "Long":
+                field.set(invokeObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                break;
+            case "String":
+                field.set(invokeObject, map.get(extendedDataFiled.getFiledName()));
+                break;
+            case "Integer":
+                field.set(invokeObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                break;
+            case "Date":
+                Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
+                field.set(invokeObject, temp);
+                break;
+            case "Boolean":
+                field.set(invokeObject, Boolean.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                break;
+            case "Double":
+                field.set(invokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                break;
         }
     }
 
@@ -520,7 +525,7 @@ public class TestService {
             return null;
         }
         try {
-            String fmtstr = null;
+            String fmtstr;
             if (datestr.indexOf(':') > 0) {
                 fmtstr = "yyyy-MM-dd HH:mm:ss";
             } else {
