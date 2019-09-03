@@ -346,11 +346,14 @@ public class TestService {
             Object mainObject = mainClass.newInstance();
             Object extObject = extClass.newInstance();
             for (ExtendedDataFiled extendedDataFiled : fileds) {
-                if (map.containsKey(extendedDataFiled.getFiledName()) && !Objects.equals(extendedDataFiled.getFiledName(), dataEntity.getMainEntityPrimarykey())) {
-                    if (extendedDataFiled.getIsMainEntityFiled() == 1) {
+
+                if (map.containsKey(extendedDataFiled.getFiledName())) {
+                    // 不允许主键进行赋值，主键全部由数据库自动生成
+                    if (extendedDataFiled.getIsMainEntityFiled() == 1 && !Objects.equals(extendedDataFiled.getFiledName(), dataEntity.getMainEntityPrimarykey())) {
                         setInvokeFiled(map, mainClass, mainObject, extendedDataFiled);
                     }
-                    if (extendedDataFiled.getIsMainEntityFiled() == 0) {
+                    // 不允许外键进行赋值，外键全部在主表生成后，从主表中的主键字段中获得
+                    if (extendedDataFiled.getIsMainEntityFiled() == 0 && !Objects.equals(extendedDataFiled.getFiledName(), dataEntity.getExtEntityForeignkey())) {
                         setInvokeFiled(map, extClass, extObject, extendedDataFiled);
                     }
                 }
