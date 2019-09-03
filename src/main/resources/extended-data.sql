@@ -11,7 +11,7 @@
  Target Server Version : 50527
  File Encoding         : 65001
 
- Date: 02/09/2019 14:59:40
+ Date: 03/09/2019 09:50:08
 */
 
 SET NAMES utf8mb4;
@@ -46,6 +46,15 @@ CREATE TABLE `ext_user`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
 
 -- ----------------------------
+-- Records of ext_user
+-- ----------------------------
+INSERT INTO `ext_user` VALUES (6, '成都市双流区', '1234124213', 'lzm123@qq.com');
+INSERT INTO `ext_user` VALUES (7, '江苏南京', '1851252321', 'sun13124@qq.com');
+INSERT INTO `ext_user` VALUES (8, '山西太原', '1304235274', 'machao@163.com');
+INSERT INTO `ext_user` VALUES (14, '安徽桐城市', '15523215853', 'wanghao@qq.com');
+INSERT INTO `ext_user` VALUES (20, 'anhui huangshan', NULL, NULL);
+
+-- ----------------------------
 -- Table structure for extended_data_entity
 -- ----------------------------
 DROP TABLE IF EXISTS `extended_data_entity`;
@@ -65,6 +74,11 @@ CREATE TABLE `extended_data_entity`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
 
 -- ----------------------------
+-- Records of extended_data_entity
+-- ----------------------------
+INSERT INTO `extended_data_entity` VALUES (1, 'com.ustcinfo.extended.entity', 'User', 'user', 'id', 'com.ustcinfo.extended.entity', 'ExtUser', 'extUser', 'mainTableId', '1', '用户信息');
+
+-- ----------------------------
 -- Table structure for extended_data_filed
 -- ----------------------------
 DROP TABLE IF EXISTS `extended_data_filed`;
@@ -79,6 +93,15 @@ CREATE TABLE `extended_data_filed`  (
   INDEX `fk_extfiled_extentity`(`ext_entity_id`) USING BTREE,
   CONSTRAINT `fk_extfiled_extentity` FOREIGN KEY (`ext_entity_id`) REFERENCES `extended_data_entity` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
+
+-- ----------------------------
+-- Records of extended_data_filed
+-- ----------------------------
+INSERT INTO `extended_data_filed` VALUES (1, 1, 'username', 'name', 1, '用户名');
+INSERT INTO `extended_data_filed` VALUES (2, 1, 'age', 'age', 1, '年龄');
+INSERT INTO `extended_data_filed` VALUES (3, 1, 'email', 'email', 0, '邮箱');
+INSERT INTO `extended_data_filed` VALUES (4, 1, 'male', 'male', 1, '性别');
+INSERT INTO `extended_data_filed` VALUES (5, 1, 'address', 'address', 0, '地址');
 
 -- ----------------------------
 -- Table structure for product
@@ -104,6 +127,15 @@ CREATE TABLE `user`  (
   `age` int(3) NULL DEFAULT NULL COMMENT '年龄',
   `male` char(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '性别',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
+
+-- ----------------------------
+-- Records of user
+-- ----------------------------
+INSERT INTO `user` VALUES (6, 'liubei', '231242', 37, 'F');
+INSERT INTO `user` VALUES (7, 'sunshangxiang', '521312', 30, 'M');
+INSERT INTO `user` VALUES (8, 'machao', '421342', 34, 'F');
+INSERT INTO `user` VALUES (14, 'wanghao', '123123', 18, 'F');
+INSERT INTO `user` VALUES (20, 'hongpei', NULL, 25, NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;

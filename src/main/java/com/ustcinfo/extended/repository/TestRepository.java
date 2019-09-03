@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
-import javax.swing.*;
 import java.util.List;
 import java.util.Map;
 
@@ -24,9 +23,12 @@ public class TestRepository {
     private EntityManager entityManager;
 
     /**
+     * 根据传入的参数查询数据库，并返回查询列表
      * @param qlString 带有参数占位符的JPQL语句
+     * @param resultClass 想要获取的返回参数类型
      * @param map      参数map，key为参数名，value为参数值
-     * @return List<Map <String , Object>> map为实体对象 key为属性名，value为属性值
+     * @param pagination 分页对象参数
+     * @return List<T> T为传入的resultClass类型
      */
     public <T> List<T> findList(String qlString, Class<T> resultClass, Map<String, Object> map, Pagination pagination) {
         TypedQuery<T> query = entityManager.createQuery(qlString, resultClass);
@@ -59,6 +61,9 @@ public class TestRepository {
         return query.executeUpdate();
     }
 
+    /**
+     * @param object 传入对象object，对其进行保存操作
+     */
     public void save(Object object){
         entityManager.persist(object);
     }

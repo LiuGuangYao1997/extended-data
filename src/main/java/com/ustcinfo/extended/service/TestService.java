@@ -46,6 +46,13 @@ public class TestService {
 
     private Logger logger = LoggerFactory.getLogger(TestService.class);
 
+    /**
+     * 扩展数据详情查询
+     *
+     * @param businessType 数据业务类型，枚举类
+     * @param id           数据主表的主键值
+     * @return String, Value的扩展数据map, key为字段名, value为字段值
+     */
     public Map queryDetailWithExt(BusinessType businessType, Long id) {
         if (id == null) {
             throw new RuntimeException("请传入非空的id值");
@@ -68,10 +75,19 @@ public class TestService {
         return list.get(0);
     }
 
-    public List<Map<String, Object>> queryTableWithExt(BusinessType businessType,
-                                                       Pagination pagination,
-                                                       List<QueryParam> queryParams,
-                                                       List<OrderParam> orderParams) {
+    /**
+     * 扩展数据表格查询
+     *
+     * @param businessType 数据业务类型, 枚举类
+     * @param pagination   分页条件
+     * @param queryParams  查询条件List
+     * @param orderParams  排序条件List
+     * @return list为扩展数据集合, list中的元素类型为map, 每一个map对应一个扩展数据对象, 每一个键值对对应扩展数据属性名-属性值
+     */
+    public List<Map> queryTableWithExt(BusinessType businessType,
+                                       Pagination pagination,
+                                       List<QueryParam> queryParams,
+                                       List<OrderParam> orderParams) {
 
         ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
@@ -90,7 +106,7 @@ public class TestService {
                     queryParamStr.append(" ");
                     if (Objects.equals(queryParam.getLog(), "like")) {
                         paramMap.put(queryParam.getFiled(), "%" + queryParam.getVal() + "%");
-                    }else {
+                    } else {
                         paramMap.put(queryParam.getFiled(), queryParam.getVal());
                     }
                 }
@@ -109,13 +125,20 @@ public class TestService {
         }
         jpqlStr += orderStr.toString();
 
-        testRepository.findList(jpqlStr, Map.class, paramMap, pagination);
+        List<Map> list = testRepository.findList(jpqlStr, Map.class, paramMap, pagination);
 
-        return null;
+        return list;
     }
 
+    /**
+     * 删除扩展数据, 先删扩展表的记录, 再删主表的记录, 事务控制一致性。
+     *
+     * @param businessType 数据业务类型, 枚举类
+     * @param id           主表主键值
+     * @return 删除结果，true为成功
+     */
     @Transactional
-    public String deleteDataWithExt(BusinessType businessType, Long id) {
+    public boolean deleteDataWithExt(BusinessType businessType, Long id) {
         if (id == null) {
             throw new RuntimeException("删除的id不能为空");
         }
@@ -131,17 +154,29 @@ public class TestService {
                 extDataEntity.getExtEntityAlias() + " where " + extDataEntity.getExtEntityAlias() +
                 "." + extDataEntity.getExtEntityForeignkey() + "=:paramId";
         int exRows = testRepository.executeUpdate(jpqlExtendedStr, map);
+        if (exRows != 1) {
+            throw new RuntimeException("删除的从表记录数不唯一, 请确认表配置");
+        }
         //拼接主表的删除语句
         String jpqlMainStr = "delete " + extDataEntity.getMainEntityName() + " " +
                 extDataEntity.getMainEntityAlias() + " where " + extDataEntity.getMainEntityAlias() +
                 "." + extDataEntity.getMainEntityPrimarykey() + "=:paramId";
         int MainRows = testRepository.executeUpdate(jpqlMainStr, map);
+        if (MainRows != 1) {
+            throw new RuntimeException("删除的主表记录数不唯一, 请确认表配置");
+        }
 
-        return "删除主表记录数: " + MainRows + "; 删除扩展表记录数: " + exRows;
+        //return "删除主表记录数: " + MainRows + "; 删除扩展表记录数: " + exRows;
+        return true;
     }
 
+    /**
+     * @param businessType 数据业务类型, 枚举类
+     * @param map          想要更新的主表从表属性map, 需要在配置表中配置的才能被更新。 如果传入value为空则不会更新。
+     * @return 更新结果，true为成功
+     */
     @Transactional
-    public String updateDataWithExt(BusinessType businessType, Map<String, Object> map) {
+    public boolean updateDataWithExt(BusinessType businessType, Map<String, Object> map) {
 
         //检查map是否为空
         if (map == null) {
@@ -163,9 +198,8 @@ public class TestService {
         if (!map.containsKey(mainEntityPrimarykey)) {
             throw new RuntimeException("请在map中传入主数据表的" + mainEntityPrimarykey + "属性");
         } else {
-            //这里因为生成的实体的数据类型都是Long型，如果传入Integer型，在绑定参数时就会报参数类型不匹配错误，所以这里把它转换一下
-            mainParamMap.put(mainEntityPrimarykey, new Long(map.get(mainEntityPrimarykey).toString()));
-            extendedParamMap.put(mainEntityPrimarykey, new Long(map.get(mainEntityPrimarykey).toString()));
+            mainParamMap.put(mainEntityPrimarykey, map.get(mainEntityPrimarykey));
+            extendedParamMap.put(mainEntityPrimarykey, map.get(mainEntityPrimarykey));
         }
         int mainParamNum = 0;
         int extParamNum = 0;
@@ -179,7 +213,7 @@ public class TestService {
                 extParamNum++;
             }
         }
-        logger.info("传入总参数有" + map.size() + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个.");
+        logger.info("传入总参数有" + map.size() + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个。");
 
         // 拼接主表更新语句
         if (mainParamNum > 0) {
@@ -192,11 +226,7 @@ public class TestService {
                     if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
                         jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
                                 .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
-                        if (map.get(filed.getFiledName()) instanceof Integer) {
-                            mainParamMap.put(filed.getFiledName(), new Long(map.get(filed.getFiledName()).toString()));
-                        } else {
-                            mainParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
-                        }
+                        mainParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
                     }
                 }
             }
@@ -206,6 +236,9 @@ public class TestService {
                     .append(mainEntityPrimarykey).append("=:")
                     .append(mainEntityPrimarykey);
             mainUpdRows = testRepository.executeUpdate(jpqlMainStr.toString(), mainParamMap);
+            if (mainUpdRows != 1) {
+                throw new RuntimeException("主表更新记录不唯一");
+            }
         }
         if (extParamNum > 0) {
             // 拼接从表更新语句
@@ -216,11 +249,7 @@ public class TestService {
                     if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
                         jpqlExtendedStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
                                 .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
-                        if (map.get(filed.getFiledName()) instanceof Integer) {
-                            extendedParamMap.put(filed.getFiledName(), new Long(map.get(filed.getFiledName()).toString()));
-                        } else {
-                            extendedParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
-                        }
+                        extendedParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
                     }
                 }
             }
@@ -229,13 +258,22 @@ public class TestService {
                     .append(extDataEntity.getExtEntityForeignkey()).append("=:")
                     .append(mainEntityPrimarykey);
             extUpdRows = testRepository.executeUpdate(jpqlExtendedStr.toString(), extendedParamMap);
+            if (extUpdRows != 1){
+                throw new RuntimeException("从表更新记录不唯一");
+            }
         }
-
-        return "更新主表记录数: " + mainUpdRows + "; 更新扩展表记录数: " + extUpdRows;
+        //return "更新主表记录数: " + mainUpdRows + "; 更新扩展表记录数: " + extUpdRows;
+        return true;
     }
 
+    /**
+     * 新增扩展数据，使用反射实现
+     * @param businessType 数据业务类型，枚举类
+     * @param map 要新增的扩展数据，map中的键值对为属性名-属性值，id如果设置有数据库自动生成可以不传。
+     * @return 新增结果,true为成功
+     */
     @Transactional
-    public String insertDataWithExt(BusinessType businessType, Map<String, Object> map) {
+    public boolean insertDataWithExt(BusinessType businessType, Map<String, Object> map) {
         if (map == null || map.isEmpty()) {
             throw new RuntimeException("添加时传入的map为空");
         }
@@ -249,10 +287,10 @@ public class TestService {
             for (ExtendedDataFiled extendedDataFiled : fileds) {
                 if (map.containsKey(extendedDataFiled.getFiledName())) {
                     if (extendedDataFiled.getIsMainEntityFiled() == 1) {
-                        setInokeFiled(map, mainClass, mainObject, extendedDataFiled);
+                        setInvokeFiled(map, mainClass, mainObject, extendedDataFiled);
                     }
                     if (extendedDataFiled.getIsMainEntityFiled() == 0) {
-                        setInokeFiled(map, extClass, extObject, extendedDataFiled);
+                        setInvokeFiled(map, extClass, extObject, extendedDataFiled);
                     }
                 }
             }
@@ -280,29 +318,43 @@ public class TestService {
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchFieldException e) {
             e.printStackTrace();
         }
-        return "ok";
+        return true;
     }
 
-    private void setInokeFiled(Map<String, Object> map, Class<?> inokeClass, Object inokeObject, ExtendedDataFiled extendedDataFiled) throws NoSuchFieldException, IllegalAccessException {
-        Field field = inokeClass.getDeclaredField(extendedDataFiled.getFiledName());
+    /**
+     * 将map中的键值对(属性名-属性值)按value类型自动转换并赋值给反射对象中与key对应的属性。
+     * @param map 存储属性名-属性值的map
+     * @param invokeClass 反射类型
+     * @param invokeObject 反射对象
+     * @param extendedDataFiled 存储反射对象的属性名的对象实例
+     * @throws NoSuchFieldException 找不到属性
+     * @throws IllegalAccessException 没有访问权限
+     */
+    private void setInvokeFiled(Map<String, Object> map, Class<?> invokeClass, Object invokeObject, ExtendedDataFiled extendedDataFiled) throws NoSuchFieldException, IllegalAccessException {
+        Field field = invokeClass.getDeclaredField(extendedDataFiled.getFiledName());
         field.setAccessible(true);
         String simpleName = field.getType().getSimpleName();
         if (Objects.equals("Long", simpleName)) {
-            field.set(inokeObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+            field.set(invokeObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
         } else if (Objects.equals("String", simpleName)) {
-            field.set(inokeObject, map.get(extendedDataFiled.getFiledName()));
+            field.set(invokeObject, map.get(extendedDataFiled.getFiledName()));
         } else if (Objects.equals("Integer", simpleName)) {
-            field.set(inokeObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+            field.set(invokeObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
         } else if (Objects.equals("Date", simpleName)) {
             Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
-            field.set(inokeObject, temp);
+            field.set(invokeObject, temp);
         } else if (Objects.equals("Boolean", simpleName)) {
-            field.set(inokeObject, Boolean.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+            field.set(invokeObject, Boolean.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
         } else if (Objects.equals("Double", simpleName)) {
-            field.set(inokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+            field.set(invokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
         }
     }
 
+    /**
+     * 根据数据业务类型，获取扩展数据字段配置表的记录列表
+     * @param businessType 数据业务类型，枚举类
+     * @return 字段配置对象list
+     */
     private List<ExtendedDataFiled> getExtendedDataFileds(BusinessType businessType) {
         //2.查询ExtendedDataFiled
         String queryDetailStr = "select d from " + EX_CONFIG_FILED + " d, " + EX_CONFIG_ENTITY + " m" +
@@ -320,6 +372,11 @@ public class TestService {
         return exConfigDetailList;
     }
 
+    /**
+     * 根据数据业务类型，获取扩展数据实体配置表的一条记录
+     * @param businessType 数据业务类型，枚举类
+     * @return 扩展数据实体配置对象
+     */
     private ExtendedDataEntity getExtendedDataEntity(BusinessType businessType) {
         //1.查询ExtendedDataEntity
         String queryMainStr = "select m from " + EX_CONFIG_ENTITY + " m  where " + DATA_TYPE_CODE + " = :businessCode";
@@ -340,6 +397,12 @@ public class TestService {
         return exConfigMainList.get(0);
     }
 
+    /**
+     * 拼接查询jpql的公共地方 select ... from entity1,entity2 where entity1.xx =entity2.xx
+     * @param exConfigFiledList 扩展数据字段配置对象列表
+     * @param extDataEntity 扩展数据实体配置对象
+     * @return jpql: select ... from entity1,entity2 where entity1.xx =entity2.xx
+     */
     private String queryDataWithExt(List<ExtendedDataFiled> exConfigFiledList,
                                     ExtendedDataEntity extDataEntity) {
 
@@ -381,10 +444,10 @@ public class TestService {
     /**
      * 格式化string为Date
      *
-     * @param datestr
+     * @param datestr 字符串类型的日期
      * @return date
      */
-    public Date parseDate(String datestr) {
+    private Date parseDate(String datestr) {
         if (null == datestr || "".equals(datestr)) {
             return null;
         }
