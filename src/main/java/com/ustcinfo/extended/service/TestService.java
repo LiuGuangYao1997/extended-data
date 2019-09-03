@@ -237,14 +237,7 @@ public class TestService {
         int mainUpdRows;
         int extUpdRows;
 
-        for (ExtendedDataFiled filed : exConfigFiledList) {
-            if (filed.getIsMainEntityFiled() == 1 && map.containsKey(filed.getFiledName())) {
-                mainParamNum++;
-            } else if (filed.getIsMainEntityFiled() == 0 && map.containsKey(filed.getFiledName())) {
-                extParamNum++;
-            }
-        }
-        logger.info("传入总参数有" + map.size() + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个。");
+
 
         // 拼接主表更新语句
         if (mainParamNum > 0) {
@@ -255,6 +248,7 @@ public class TestService {
                 if (filed.getIsMainEntityFiled() == 1) {
                     //DONE 判断更新值是否为空， 如果为空就不更新
                     if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
+                        mainParamNum++;
                         jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
                                 .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
                         setUpdateParamMap(map, mainClass, mainParamMap, filed);
@@ -278,6 +272,7 @@ public class TestService {
             for (ExtendedDataFiled filed : exConfigFiledList) {
                 if (filed.getIsMainEntityFiled() == 0) {
                     if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
+                        extParamNum++;
                         jpqlExtendedStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
                                 .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
                         extendedParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
@@ -294,6 +289,7 @@ public class TestService {
                 throw new RuntimeException("从表更新记录不唯一");
             }
         }
+        logger.info("传入总参数有" + map.size() + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个。");
         //return "更新主表记录数: " + mainUpdRows + "; 更新扩展表记录数: " + extUpdRows;
         return true;
     }
