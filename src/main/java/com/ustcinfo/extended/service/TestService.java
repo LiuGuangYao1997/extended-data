@@ -237,55 +237,54 @@ public class TestService {
         int mainUpdRows;
         int extUpdRows;
 
-
-
         // 拼接主表更新语句
-        if (mainParamNum > 0) {
-            //拼接where之前的字符串
-            jpqlMainStr.append("update ").append(extDataEntity.getMainEntityName()).append(" ")
-                    .append(extDataEntity.getMainEntityAlias()).append(" set");
-            for (ExtendedDataFiled filed : exConfigFiledList) {
-                if (filed.getIsMainEntityFiled() == 1) {
-                    //DONE 判断更新值是否为空， 如果为空就不更新
-                    if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
-                        mainParamNum++;
-                        jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
-                                .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
-                        setUpdateParamMap(map, mainClass, mainParamMap, filed);
-                    }
+
+        //拼接where之前的字符串
+        jpqlMainStr.append("update ").append(extDataEntity.getMainEntityName()).append(" ")
+                .append(extDataEntity.getMainEntityAlias()).append(" set");
+        for (ExtendedDataFiled filed : exConfigFiledList) {
+            if (filed.getIsMainEntityFiled() == 1) {
+                //DONE 判断更新值是否为空， 如果为空就不更新
+                if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
+                    mainParamNum++;
+                    jpqlMainStr.append(" ").append(extDataEntity.getMainEntityAlias()).append(".")
+                            .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
+                    setUpdateParamMap(map, mainClass, mainParamMap, filed);
                 }
             }
-            jpqlMainStr.replace(jpqlMainStr.length() - 1, jpqlMainStr.length(), " ");
-            //拼接where之后的字符串，下同
-            jpqlMainStr.append("where ").append(extDataEntity.getMainEntityAlias()).append(".")
-                    .append(mainEntityPrimarykey).append("=:")
-                    .append(mainEntityPrimarykey);
+        }
+        jpqlMainStr.replace(jpqlMainStr.length() - 1, jpqlMainStr.length(), " ");
+        //拼接where之后的字符串，下同
+        jpqlMainStr.append("where ").append(extDataEntity.getMainEntityAlias()).append(".")
+                .append(mainEntityPrimarykey).append("=:")
+                .append(mainEntityPrimarykey);
+        if (mainParamNum>0){
             mainUpdRows = testRepository.executeUpdate(jpqlMainStr.toString(), mainParamMap);
             if (mainUpdRows != 1) {
                 throw new RuntimeException("主表更新记录不唯一");
             }
         }
-        if (extParamNum > 0) {
-            // 拼接从表更新语句
-            jpqlExtendedStr.append("update ").append(extDataEntity.getExtEntityName()).append(" ")
-                    .append(extDataEntity.getExtEntityAlias()).append(" set");
-            for (ExtendedDataFiled filed : exConfigFiledList) {
-                if (filed.getIsMainEntityFiled() == 0) {
-                    if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
-                        extParamNum++;
-                        jpqlExtendedStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
-                                .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
-                        extendedParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
-                        setUpdateParamMap(map, extClass, extendedParamMap, filed);
-                    }
+        // 拼接从表更新语句
+        jpqlExtendedStr.append("update ").append(extDataEntity.getExtEntityName()).append(" ")
+                .append(extDataEntity.getExtEntityAlias()).append(" set");
+        for (ExtendedDataFiled filed : exConfigFiledList) {
+            if (filed.getIsMainEntityFiled() == 0) {
+                if (map.containsKey(filed.getFiledName()) && map.get(filed.getFiledName()) != null) {
+                    extParamNum++;
+                    jpqlExtendedStr.append(" ").append(extDataEntity.getExtEntityAlias()).append(".")
+                            .append(filed.getFiledName()).append("=:").append(filed.getFiledName()).append(",");
+                    extendedParamMap.put(filed.getFiledName(), map.get(filed.getFiledName()));
+                    setUpdateParamMap(map, extClass, extendedParamMap, filed);
                 }
             }
-            jpqlExtendedStr.replace(jpqlExtendedStr.length() - 1, jpqlExtendedStr.length(), " ");
-            jpqlExtendedStr.append("where ").append(extDataEntity.getExtEntityAlias()).append(".")
-                    .append(extDataEntity.getExtEntityForeignkey()).append("=:")
-                    .append(mainEntityPrimarykey);
+        }
+        jpqlExtendedStr.replace(jpqlExtendedStr.length() - 1, jpqlExtendedStr.length(), " ");
+        jpqlExtendedStr.append("where ").append(extDataEntity.getExtEntityAlias()).append(".")
+                .append(extDataEntity.getExtEntityForeignkey()).append("=:")
+                .append(mainEntityPrimarykey);
+        if (extParamNum > 0){
             extUpdRows = testRepository.executeUpdate(jpqlExtendedStr.toString(), extendedParamMap);
-            if (extUpdRows != 1){
+            if (extUpdRows != 1) {
                 throw new RuntimeException("从表更新记录不唯一");
             }
         }
@@ -329,9 +328,10 @@ public class TestService {
 
     /**
      * 新增扩展数据，使用反射实现
+     *
      * @param businessType 数据业务类型，枚举类
-     * @param map 要新增的扩展数据，map中的键值对为属性名-属性值，id如果设置有数据库自动生成可以不传。
-     * @return 新增结果,true为成功
+     * @param map          要新增的扩展数据，map中的键值对为属性名-属性值，id如果设置有数据库自动生成可以不传。
+     * @return 新增结果, true为成功
      */
     @Transactional
     public boolean insertDataWithExt(BusinessType businessType, Map<String, Object> map) {
@@ -346,7 +346,7 @@ public class TestService {
             Object mainObject = mainClass.newInstance();
             Object extObject = extClass.newInstance();
             for (ExtendedDataFiled extendedDataFiled : fileds) {
-                if (map.containsKey(extendedDataFiled.getFiledName())) {
+                if (map.containsKey(extendedDataFiled.getFiledName()) && !Objects.equals(extendedDataFiled.getFiledName(), dataEntity.getMainEntityPrimarykey())) {
                     if (extendedDataFiled.getIsMainEntityFiled() == 1) {
                         setInvokeFiled(map, mainClass, mainObject, extendedDataFiled);
                     }
@@ -385,11 +385,11 @@ public class TestService {
     /**
      * 将map中的键值对(属性名-属性值)按value类型自动转换并赋值给反射对象中与key对应的属性。
      *
-     * @param map 存储属性名-属性值的map
-     * @param invokeClass 反射类型
-     * @param invokeObject 反射对象
+     * @param map               存储属性名-属性值的map
+     * @param invokeClass       反射类型
+     * @param invokeObject      反射对象
      * @param extendedDataFiled 存储反射对象的属性名的对象实例
-     * @throws NoSuchFieldException 找不到属性
+     * @throws NoSuchFieldException   找不到属性
      * @throws IllegalAccessException 没有访问权限
      */
     private void setInvokeFiled(Map<String, Object> map, Class<?> invokeClass, Object invokeObject, ExtendedDataFiled extendedDataFiled) throws NoSuchFieldException, IllegalAccessException {
@@ -421,6 +421,7 @@ public class TestService {
 
     /**
      * 根据数据业务类型，获取扩展数据字段配置表的记录列表
+     *
      * @param businessType 数据业务类型，枚举类
      * @return 字段配置对象list
      */
@@ -443,6 +444,7 @@ public class TestService {
 
     /**
      * 根据数据业务类型，获取扩展数据实体配置表的一条记录
+     *
      * @param businessType 数据业务类型，枚举类
      * @return 扩展数据实体配置对象
      */
@@ -468,8 +470,9 @@ public class TestService {
 
     /**
      * 拼接查询jpql的公共地方 select ... from entity1,entity2 where entity1.xx =entity2.xx
+     *
      * @param exConfigFiledList 扩展数据字段配置对象列表
-     * @param extDataEntity 扩展数据实体配置对象
+     * @param extDataEntity     扩展数据实体配置对象
      * @return jpql: select ... from entity1,entity2 where entity1.xx =entity2.xx
      */
     private String queryDataWithExt(List<ExtendedDataFiled> exConfigFiledList,
