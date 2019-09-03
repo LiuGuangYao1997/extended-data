@@ -55,6 +55,18 @@ public class TestRestController {
         }
     }
 
+    @RequestMapping("/test/extQueryDetail/{dataType}/{id}")
+    public Map extInsert(@PathVariable String dataType, @PathVariable Long id) {
+        if (Objects.equals(dataType, BusinessType.PRODUCT_INFO_SELECT_1.getCode())) {
+            return testService.queryDetailWithExt(BusinessType.PRODUCT_INFO_SELECT_1, id);
+        }
+        if (Objects.equals(dataType, BusinessType.USER_INFO_SELECT_1.getCode())) {
+            return testService.queryDetailWithExt(BusinessType.USER_INFO_SELECT_1, id);
+        } else {
+            return null;
+        }
+    }
+
     @RequestMapping("/test/extQueryTable/{dataType}")
     public List<Map> extQueryTable(@PathVariable String dataType) {
         Pagination pagination = new Pagination();
