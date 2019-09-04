@@ -67,7 +67,7 @@ public class ExtendedDataService {
         paramMap.put("id", id);
         List<Map> list = extendedDataRepository.findList(jpqlStr, Map.class, paramMap, null);
         if (list == null || list.size() == 0) {
-            throw new RuntimeException("查询结果为空");
+            return null;
         }
         if (list.size() != 1) {
             throw new RuntimeException("查询结果不唯一");
@@ -92,8 +92,7 @@ public class ExtendedDataService {
         ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessDataType);
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessDataType);
 
-        String queryHeaderStr = queryDataWithExt(exConfigFiledList, extDataEntity);
-        String queryStr = queryHeaderStr;
+        String queryStr = queryDataWithExt(exConfigFiledList, extDataEntity);
 
         HashMap<String, Object> paramMap = new HashMap<String, Object>();
 
@@ -210,7 +209,6 @@ public class ExtendedDataService {
         HashMap<String, Object> extendedParamMap = new HashMap<String, Object>();
 
         //做一遍检查，要求传入的map中必须要有与数据主表属性名一致的key
-        //做一遍检查，要求传入的map中必须要有与数据主表属性名一致的key
         if (!map.containsKey(mainEntityPrimarykey)) {
             throw new RuntimeException("请在map中传入主数据表的" + mainEntityPrimarykey + "属性");
         } else if (map.size() == 1) {
@@ -239,6 +237,12 @@ public class ExtendedDataService {
                     }
                 }
             } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            } catch (NumberFormatException e){
+                logger.error("格式转换异常---键：" + mainEntityPrimarykey + "---值：" + map.get(mainEntityPrimarykey).toString());
+                e.printStackTrace();
+            } catch (NullPointerException e){
+                logger.error("传入的主键为空");
                 e.printStackTrace();
             }
         }
@@ -310,7 +314,7 @@ public class ExtendedDataService {
                 throw new RuntimeException("从表更新记录大于1");
             }
         }
-        logger.info("传入总参数有" + map.size() + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个。");
+        logger.info("传入总参数有" + (mainParamNum + extParamNum) + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个。");
         return true;
     }
 
@@ -344,6 +348,9 @@ public class ExtendedDataService {
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
+        } catch (NumberFormatException e){
+            logger.error("格式转换异常---键：" + filed.getFiledName() + "---值：" + map.get(filed.getFiledName()).toString());
+            e.printStackTrace();
         }
     }
 
@@ -356,18 +363,28 @@ public class ExtendedDataService {
      */
     @Transactional
     public boolean insertDataWithExt(BusinessDataType businessDataType, Map<String, Object> map) {
+        ExtendedDataEntity dataEntity = getExtendedDataEntity(businessDataType);
+        List<ExtendedDataFiled> fileds = getExtendedDataFileds(businessDataType);
+        //排除传入值为null的键值对
+        if (map != null){
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                if (entry.getValue() == null){
+                    map.remove(entry.getKey());
+                }
+            }
+        }
         if (map == null || map.isEmpty()) {
             throw new RuntimeException("添加时传入的map为空");
         }
-        ExtendedDataEntity dataEntity = getExtendedDataEntity(businessDataType);
-        List<ExtendedDataFiled> fileds = getExtendedDataFileds(businessDataType);
+        if (map.containsKey(dataEntity.getMainEntityPrimarykey()) && map.size() == 1){
+            throw new RuntimeException("添加时传入的map应至少有一个属性值");
+        }
         try {
             Class<?> mainClass = Class.forName(dataEntity.getMainEntityPackage() + "." + dataEntity.getMainEntityName());
             Class<?> extClass = Class.forName(dataEntity.getExtEntityPackage() + "." + dataEntity.getExtEntityName());
             Object mainObject = mainClass.newInstance();
             Object extObject = extClass.newInstance();
             for (ExtendedDataFiled extendedDataFiled : fileds) {
-
                 if (map.containsKey(extendedDataFiled.getFiledName())) {
                     // 不允许主键进行赋值，主键全部由数据库自动生成
                     if (extendedDataFiled.getIsMainEntityFiled() == 1 && !Objects.equals(extendedDataFiled.getFiledName(), dataEntity.getMainEntityPrimarykey())) {
@@ -414,32 +431,38 @@ public class ExtendedDataService {
      * @param invokeObject      反射对象
      * @param extendedDataFiled 存储反射对象的属性名的对象实例
      * @throws NoSuchFieldException   找不到属性
-     * @throws IllegalAccessException 没有访问权限
      */
-    private void setInvokeFiled(Map<String, Object> map, Class<?> invokeClass, Object invokeObject, ExtendedDataFiled extendedDataFiled) throws NoSuchFieldException, IllegalAccessException {
+    private void setInvokeFiled(Map<String, Object> map, Class<?> invokeClass, Object invokeObject, ExtendedDataFiled extendedDataFiled) throws NoSuchFieldException {
         Field field = invokeClass.getDeclaredField(extendedDataFiled.getFiledName());
         field.setAccessible(true);
         String simpleName = field.getType().getSimpleName();
-        switch (simpleName) {
-            case "Long":
-                field.set(invokeObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-                break;
-            case "String":
-                field.set(invokeObject, map.get(extendedDataFiled.getFiledName()));
-                break;
-            case "Integer":
-                field.set(invokeObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-                break;
-            case "Date":
-                Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
-                field.set(invokeObject, temp);
-                break;
-            case "Boolean":
-                field.set(invokeObject, Boolean.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-                break;
-            case "Double":
-                field.set(invokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
-                break;
+        try {
+            switch (simpleName) {
+                case "Long":
+                    field.set(invokeObject, Long.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                    break;
+                case "String":
+                    field.set(invokeObject, map.get(extendedDataFiled.getFiledName()));
+                    break;
+                case "Integer":
+                    field.set(invokeObject, Integer.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                    break;
+                case "Date":
+                    Date temp = parseDate(map.get(extendedDataFiled.getFiledName()).toString());
+                    field.set(invokeObject, temp);
+                    break;
+                case "Boolean":
+                    field.set(invokeObject, Boolean.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                    break;
+                case "Double":
+                    field.set(invokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
+                    break;
+            }
+        } catch (NumberFormatException e){
+            logger.error("格式转换异常---键：" + extendedDataFiled.getFiledName() + "---值：" + map.get(extendedDataFiled.getFiledName()).toString());
+            e.printStackTrace();
+        } catch (IllegalArgumentException | IllegalAccessException e) {
+            e.printStackTrace();
         }
     }
 
