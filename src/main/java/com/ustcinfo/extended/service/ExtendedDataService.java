@@ -112,7 +112,6 @@ public class ExtendedDataService {
                     }
                 }
             }
-            queryParamStr.replace(0, 4, "");
             queryStr += queryParamStr;
         }
 
@@ -123,7 +122,7 @@ public class ExtendedDataService {
                 orderStr.append(orderParam.getFiled()).append(" ").append(orderParam.getOrder()).append(", ");
             }
             orderStr.replace(orderStr.length() - 2, orderStr.length(), " ");
-            queryStr += orderStr;
+            queryStr += " order by " + orderStr;
         }
 
         return extendedDataRepository.findList(queryStr, Map.class, paramMap, pagination);
