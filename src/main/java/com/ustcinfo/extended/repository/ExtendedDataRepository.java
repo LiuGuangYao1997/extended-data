@@ -17,7 +17,7 @@ import java.util.Map;
  * @date 2019-08-27
  */
 @Repository
-public class TestRepository {
+public class ExtendedDataRepository {
 
     @Autowired
     private EntityManager entityManager;

@@ -4,7 +4,7 @@ package com.ustcinfo.extended.common;
  * @Author: liu.guangyao@ustcinfo.com
  * @Date: 2019/8/27 16:35
  */
-public enum BusinessType {
+public enum BusinessDataType {
 
     USER_INFO_SELECT_1("USER_INFO_SELECT_1", "用户个人信息查询1", "1"),
     PRODUCT_INFO_SELECT_1("PRODUCT_INFO_SELECT_1", "产品信息查询1", "2");
@@ -13,7 +13,7 @@ public enum BusinessType {
     private String describe;
     private String code;
 
-    private BusinessType(String key, String describe, String code) {
+    private BusinessDataType(String key, String describe, String code) {
         this.key = key;
         this.describe = describe;
         this.code = code;

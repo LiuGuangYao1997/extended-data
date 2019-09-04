@@ -1,13 +1,13 @@
 package com.ustcinfo.extended.service;
 
 
-import com.ustcinfo.extended.common.BusinessType;
+import com.ustcinfo.extended.common.BusinessDataType;
 import com.ustcinfo.extended.common.OrderParam;
 import com.ustcinfo.extended.common.Pagination;
 import com.ustcinfo.extended.common.QueryParam;
 import com.ustcinfo.extended.entity.ExtendedDataEntity;
 import com.ustcinfo.extended.entity.ExtendedDataFiled;
-import com.ustcinfo.extended.repository.TestRepository;
+import com.ustcinfo.extended.repository.ExtendedDataRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ import java.util.*;
  */
 
 @Service
-public class TestService {
+public class ExtendedDataService {
 
     // 扩展字段配置表主表实体名
     private static final String EX_CONFIG_ENTITY = ExtendedDataEntity.class.getSimpleName();
@@ -42,30 +42,30 @@ public class TestService {
     private static final String EXT_FILED_FOREIGNKEY = "extEntityId";
 
     @Autowired
-    private TestRepository testRepository;
+    private ExtendedDataRepository extendedDataRepository;
 
-    private Logger logger = LoggerFactory.getLogger(TestService.class);
+    private Logger logger = LoggerFactory.getLogger(ExtendedDataService.class);
 
     /**
      * 扩展数据详情查询
      *
-     * @param businessType 数据业务类型，枚举类
+     * @param businessDataType 数据业务类型，枚举类
      * @param id           数据主表的主键值
      * @return String, Value的扩展数据map, key为字段名, value为字段值
      */
-    public Map queryDetailWithExt(BusinessType businessType, Long id) {
+    public Map queryDetailWithExt(BusinessDataType businessDataType, Long id) {
         if (id == null) {
             throw new RuntimeException("请传入非空的id值");
         }
-        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
-        List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
+        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessDataType);
+        List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessDataType);
 
         String jpqlStr = queryDataWithExt(exConfigFiledList, extDataEntity);
         jpqlStr = jpqlStr + " and " + extDataEntity.getMainEntityAlias() + "."
                 + extDataEntity.getMainEntityPrimarykey() + "=:id";
         HashMap<String, Object> paramMap = new HashMap<String, Object>();
         paramMap.put("id", id);
-        List<Map> list = testRepository.findList(jpqlStr, Map.class, paramMap, null);
+        List<Map> list = extendedDataRepository.findList(jpqlStr, Map.class, paramMap, null);
         if (list == null || list.size() == 0) {
             throw new RuntimeException("查询结果为空");
         }
@@ -78,19 +78,19 @@ public class TestService {
     /**
      * 扩展数据表格查询
      *
-     * @param businessType 数据业务类型, 枚举类
+     * @param businessDataType 数据业务类型, 枚举类
      * @param pagination   分页条件
      * @param queryParams  查询条件List
      * @param orderParams  排序条件List
      * @return list为扩展数据集合, list中的元素类型为map, 每一个map对应一个扩展数据对象, 每一个键值对对应扩展数据属性名-属性值
      */
-    public List<Map> queryTableWithExt(BusinessType businessType,
+    public List<Map> queryTableWithExt(BusinessDataType businessDataType,
                                        Pagination pagination,
                                        List<QueryParam> queryParams,
                                        List<OrderParam> orderParams) {
 
-        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
-        List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
+        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessDataType);
+        List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessDataType);
 
         String queryHeaderStr = queryDataWithExt(exConfigFiledList, extDataEntity);
 
@@ -126,24 +126,24 @@ public class TestService {
 
         String queryStr = String.format("%s and %s order by %s", queryHeaderStr, queryParamStr.toString(), orderStr);
 
-        return testRepository.findList(queryStr, Map.class, paramMap, pagination);
+        return extendedDataRepository.findList(queryStr, Map.class, paramMap, pagination);
     }
 
     /**
      * 删除扩展数据, 先删扩展表的记录, 再删主表的记录, 事务控制一致性。
      *
-     * @param businessType 数据业务类型, 枚举类
+     * @param businessDataType 数据业务类型, 枚举类
      * @param id           主表主键值
      * @return 删除结果，true为成功
      */
     @Transactional
-    public boolean deleteDataWithExt(BusinessType businessType, Long id) {
+    public boolean deleteDataWithExt(BusinessDataType businessDataType, Long id) {
         if (id == null) {
             throw new RuntimeException("删除的id不能为空");
         }
 
         //查询扩展配置实体表信息
-        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
+        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessDataType);
 
         HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("paramId", id);
@@ -153,7 +153,7 @@ public class TestService {
         String extParamStr = extDataEntity.getExtEntityAlias() + "."
                 + extDataEntity.getExtEntityForeignkey() + "=:paramId";
         String extDeleteStr = String.format("delete %s where %s", extTableStr, extParamStr);
-        int exRows = testRepository.executeUpdate(extDeleteStr, map);
+        int exRows = extendedDataRepository.executeUpdate(extDeleteStr, map);
         if (exRows != 1) {
             throw new RuntimeException("删除的从表记录数不唯一, 请确认表配置");
         }
@@ -163,7 +163,7 @@ public class TestService {
         String mainParamStr = extDataEntity.getMainEntityAlias() + "."
                 + extDataEntity.getMainEntityPrimarykey() + "=:paramId";
         String mainDeleteStr = String.format("delete %s where %s", mainTableStr, mainParamStr);
-        int MainRows = testRepository.executeUpdate(mainDeleteStr, map);
+        int MainRows = extendedDataRepository.executeUpdate(mainDeleteStr, map);
         if (MainRows != 1) {
             throw new RuntimeException("删除的主表记录数不唯一, 请确认表配置");
         }
@@ -172,12 +172,12 @@ public class TestService {
     }
 
     /**
-     * @param businessType 数据业务类型, 枚举类
+     * @param businessDataType 数据业务类型, 枚举类
      * @param map          想要更新的主表从表属性map, 需要在配置表中配置的才能被更新。 如果传入value为空则不会更新。
      * @return 更新结果，true为成功
      */
     @Transactional
-    public boolean updateDataWithExt(BusinessType businessType, Map<String, Object> map) {
+    public boolean updateDataWithExt(BusinessDataType businessDataType, Map<String, Object> map) {
 
         //检查map是否为空
         if (map == null) {
@@ -185,8 +185,8 @@ public class TestService {
         }
 
         //查询扩展配置实体表信息
-        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessType);
-        List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessType);
+        ExtendedDataEntity extDataEntity = getExtendedDataEntity(businessDataType);
+        List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessDataType);
         String mainEntityPrimarykey = extDataEntity.getMainEntityPrimarykey();
 
         Class<?> mainClass = null;
@@ -262,7 +262,7 @@ public class TestService {
                 + "=:" + mainEntityPrimarykey;
         String updateMainStr = String.format("update %s set %s where %s", updateMainTableStr, updateMainSetStr, updateMainParamStr);
         if (mainParamNum>0){
-            mainUpdRows = testRepository.executeUpdate(updateMainStr, mainParamMap);
+            mainUpdRows = extendedDataRepository.executeUpdate(updateMainStr, mainParamMap);
             if (mainUpdRows != 1) {
                 throw new RuntimeException("主表更新记录不唯一或主表未成功更新");
             }
@@ -287,7 +287,7 @@ public class TestService {
                 + "=:" + mainEntityPrimarykey;
         String updateExtStr = String.format("update %s set %s where %s", updateExtTableStr, updateExtSetStr, updateExtParamStr);
         if (extParamNum > 0){
-            extUpdRows = testRepository.executeUpdate(updateExtStr, extendedParamMap);
+            extUpdRows = extendedDataRepository.executeUpdate(updateExtStr, extendedParamMap);
             if (extUpdRows != 1) {
                 throw new RuntimeException("从表更新记录不唯一或从表未成功更新");
             }
@@ -332,17 +332,17 @@ public class TestService {
     /**
      * 新增扩展数据，使用反射实现
      *
-     * @param businessType 数据业务类型，枚举类
+     * @param businessDataType 数据业务类型，枚举类
      * @param map          要新增的扩展数据，map中的键值对为属性名-属性值，id如果设置有数据库自动生成可以不传。
      * @return 新增结果, true为成功
      */
     @Transactional
-    public boolean insertDataWithExt(BusinessType businessType, Map<String, Object> map) {
+    public boolean insertDataWithExt(BusinessDataType businessDataType, Map<String, Object> map) {
         if (map == null || map.isEmpty()) {
             throw new RuntimeException("添加时传入的map为空");
         }
-        ExtendedDataEntity dataEntity = getExtendedDataEntity(businessType);
-        List<ExtendedDataFiled> fileds = getExtendedDataFileds(businessType);
+        ExtendedDataEntity dataEntity = getExtendedDataEntity(businessDataType);
+        List<ExtendedDataFiled> fileds = getExtendedDataFileds(businessDataType);
         try {
             Class<?> mainClass = Class.forName(dataEntity.getMainEntityPackage() + "." + dataEntity.getMainEntityName());
             Class<?> extClass = Class.forName(dataEntity.getExtEntityPackage() + "." + dataEntity.getExtEntityName());
@@ -362,7 +362,7 @@ public class TestService {
                 }
             }
             // 先保存主数据
-            testRepository.save(mainObject);
+            extendedDataRepository.save(mainObject);
             // 保存主数据后通过反射获取到它的id值
             Object mainId = null;
             try {
@@ -381,7 +381,7 @@ public class TestService {
                 e.printStackTrace();
             }
             // 保存扩展数据
-            testRepository.save(extObject);
+            extendedDataRepository.save(extObject);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchFieldException e) {
             e.printStackTrace();
         }
@@ -428,17 +428,17 @@ public class TestService {
     /**
      * 根据数据业务类型，获取扩展数据字段配置表的记录列表
      *
-     * @param businessType 数据业务类型，枚举类
+     * @param businessDataType 数据业务类型，枚举类
      * @return 字段配置对象list
      */
-    private List<ExtendedDataFiled> getExtendedDataFileds(BusinessType businessType) {
+    private List<ExtendedDataFiled> getExtendedDataFileds(BusinessDataType businessDataType) {
         //2.查询ExtendedDataFiled
         String queryDetailStr = String.format("select filed from %s filed, %s entity where entity.%s = filed.%s and entity.%s=:businessCode",
                 EX_CONFIG_FILED, EX_CONFIG_ENTITY, EXT_ENTITY_PRIMARYKEY, EXT_FILED_FOREIGNKEY, DATA_TYPE_CODE);
         Map<String, Object> exParamMap = new HashMap<String, Object>();
-        exParamMap.put("businessCode", businessType.getCode());
+        exParamMap.put("businessCode", businessDataType.getCode());
         List<ExtendedDataFiled> exConfigDetailList =
-                testRepository.findList(queryDetailStr, ExtendedDataFiled.class, exParamMap, null);
+                extendedDataRepository.findList(queryDetailStr, ExtendedDataFiled.class, exParamMap, null);
 
         //对查询的exConfigDetailList做检查
         if (exConfigDetailList == null || exConfigDetailList.isEmpty()) {
@@ -450,16 +450,16 @@ public class TestService {
     /**
      * 根据数据业务类型，获取扩展数据实体配置表的一条记录
      *
-     * @param businessType 数据业务类型，枚举类
+     * @param businessDataType 数据业务类型，枚举类
      * @return 扩展数据实体配置对象
      */
-    private ExtendedDataEntity getExtendedDataEntity(BusinessType businessType) {
+    private ExtendedDataEntity getExtendedDataEntity(BusinessDataType businessDataType) {
         //1.查询ExtendedDataEntity
         String queryMainStr = "select m from " + EX_CONFIG_ENTITY + " m  where " + DATA_TYPE_CODE + " = :businessCode";
         Map<String, Object> exParamMap = new HashMap<String, Object>();
-        exParamMap.put("businessCode", businessType.getCode());
+        exParamMap.put("businessCode", businessDataType.getCode());
         List<ExtendedDataEntity> exConfigMainList =
-                testRepository.findList(queryMainStr, ExtendedDataEntity.class, exParamMap, null);
+                extendedDataRepository.findList(queryMainStr, ExtendedDataEntity.class, exParamMap, null);
 
         //对查询的exConfigMainList做检查
         if (exConfigMainList == null || exConfigMainList.isEmpty()) {
