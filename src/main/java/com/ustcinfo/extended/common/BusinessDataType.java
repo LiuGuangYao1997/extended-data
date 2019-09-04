@@ -7,7 +7,9 @@ package com.ustcinfo.extended.common;
 public enum BusinessDataType {
 
     USER_INFO_SELECT_1("USER_INFO_SELECT_1", "用户个人信息查询1", "1"),
-    PRODUCT_INFO_SELECT_1("PRODUCT_INFO_SELECT_1", "产品信息查询1", "2");
+    PRODUCT_INFO_SELECT_1("PRODUCT_INFO_SELECT_1", "产品信息查询1", "2"),
+    USER_INFO_SELECT_2("USER_INFO_SELECT_2", "用户个人信息查询2", "3"),
+    USER_INFO_SELECT_3("USER_INFO_SELECT_3", "用户个人信息查询3", "4");
 
     private String key;
     private String describe;

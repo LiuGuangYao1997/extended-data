@@ -50,7 +50,7 @@ public class ExtendedDataService {
      * 扩展数据详情查询
      *
      * @param businessDataType 数据业务类型，枚举类
-     * @param id           数据主表的主键值
+     * @param id               数据主表的主键值
      * @return String, Value的扩展数据map, key为字段名, value为字段值
      */
     public Map queryDetailWithExt(BusinessDataType businessDataType, Long id) {
@@ -79,9 +79,9 @@ public class ExtendedDataService {
      * 扩展数据表格查询
      *
      * @param businessDataType 数据业务类型, 枚举类
-     * @param pagination   分页条件
-     * @param queryParams  查询条件List
-     * @param orderParams  排序条件List
+     * @param pagination       分页条件
+     * @param queryParams      查询条件List
+     * @param orderParams      排序条件List
      * @return list为扩展数据集合, list中的元素类型为map, 每一个map对应一个扩展数据对象, 每一个键值对对应扩展数据属性名-属性值
      */
     public List<Map> queryTableWithExt(BusinessDataType businessDataType,
@@ -93,6 +93,7 @@ public class ExtendedDataService {
         List<ExtendedDataFiled> exConfigFiledList = getExtendedDataFileds(businessDataType);
 
         String queryHeaderStr = queryDataWithExt(exConfigFiledList, extDataEntity);
+        String queryStr = queryHeaderStr;
 
         HashMap<String, Object> paramMap = new HashMap<String, Object>();
 
@@ -113,6 +114,7 @@ public class ExtendedDataService {
                 }
             }
             queryParamStr.replace(0, 4, "");
+            queryStr += queryParamStr;
         }
 
         // 拼接排序条件
@@ -122,9 +124,8 @@ public class ExtendedDataService {
                 orderStr.append(orderParam.getFiled()).append(" ").append(orderParam.getOrder()).append(", ");
             }
             orderStr.replace(orderStr.length() - 2, orderStr.length(), " ");
+            queryStr += orderStr;
         }
-
-        String queryStr = String.format("%s and %s order by %s", queryHeaderStr, queryParamStr.toString(), orderStr);
 
         return extendedDataRepository.findList(queryStr, Map.class, paramMap, pagination);
     }
@@ -133,7 +134,7 @@ public class ExtendedDataService {
      * 删除扩展数据, 先删扩展表的记录, 再删主表的记录, 事务控制一致性。
      *
      * @param businessDataType 数据业务类型, 枚举类
-     * @param id           主表主键值
+     * @param id               主表主键值
      * @return 删除结果，true为成功
      */
     @Transactional
@@ -154,8 +155,11 @@ public class ExtendedDataService {
                 + extDataEntity.getExtEntityForeignkey() + "=:paramId";
         String extDeleteStr = String.format("delete %s where %s", extTableStr, extParamStr);
         int exRows = extendedDataRepository.executeUpdate(extDeleteStr, map);
-        if (exRows != 1) {
-            throw new RuntimeException("删除的从表记录数不唯一, 请确认表配置");
+        if (exRows == 0) {
+            throw new RuntimeException("删除的从表记录数为0, 请确认表中是否有该id记录");
+        }
+        if (exRows > 1) {
+            throw new RuntimeException("删除的从表记录数大于, 请确认扩展配置表或传入id值是否正确");
         }
 
         //拼接主表的删除语句
@@ -164,8 +168,11 @@ public class ExtendedDataService {
                 + extDataEntity.getMainEntityPrimarykey() + "=:paramId";
         String mainDeleteStr = String.format("delete %s where %s", mainTableStr, mainParamStr);
         int MainRows = extendedDataRepository.executeUpdate(mainDeleteStr, map);
-        if (MainRows != 1) {
-            throw new RuntimeException("删除的主表记录数不唯一, 请确认表配置");
+        if (MainRows == 0) {
+            throw new RuntimeException("删除的主表记录数为0, 请确认表中是否有该id记录");
+        }
+        if (MainRows > 1) {
+            throw new RuntimeException("删除的主表表记录数大于1, 请确认扩展配置表或传入id值是否正确");
         }
 
         return true;
@@ -173,7 +180,7 @@ public class ExtendedDataService {
 
     /**
      * @param businessDataType 数据业务类型, 枚举类
-     * @param map          想要更新的主表从表属性map, 需要在配置表中配置的才能被更新。 如果传入value为空则不会更新。
+     * @param map              想要更新的主表从表属性map, 需要在配置表中配置的才能被更新。 如果传入value为空则不会更新。
      * @return 更新结果，true为成功
      */
     @Transactional
@@ -206,6 +213,8 @@ public class ExtendedDataService {
         //做一遍检查，要求传入的map中必须要有与数据主表属性名一致的key
         if (!map.containsKey(mainEntityPrimarykey)) {
             throw new RuntimeException("请在map中传入主数据表的" + mainEntityPrimarykey + "属性");
+        } else if (map.size() == 1) {
+            throw new RuntimeException("传入的map中只有主键属性，没有需要更新的属性");
         } else {
             try {
                 if (mainClass != null) {
@@ -256,15 +265,19 @@ public class ExtendedDataService {
                 }
             }
         }
-        updateMainSetStr.replace(updateMainSetStr.length() - 1, updateMainSetStr.length(), " ");
+        if (mainParamNum > 0){
+            updateMainSetStr.replace(updateMainSetStr.length() - 1, updateMainSetStr.length(), " ");
+        }
         //拼接where之后的字符串，下同
         updateMainParamStr = extDataEntity.getMainEntityAlias() + "." + mainEntityPrimarykey
                 + "=:" + mainEntityPrimarykey;
         String updateMainStr = String.format("update %s set %s where %s", updateMainTableStr, updateMainSetStr, updateMainParamStr);
-        if (mainParamNum>0){
+        if (mainParamNum > 0) {
             mainUpdRows = extendedDataRepository.executeUpdate(updateMainStr, mainParamMap);
-            if (mainUpdRows != 1) {
-                throw new RuntimeException("主表更新记录不唯一或主表未成功更新");
+            if (mainUpdRows == 0) {
+                throw new RuntimeException("主表未成功更新");
+            }else if (mainUpdRows > 1){
+                throw new RuntimeException("主表更新记录大于1");
             }
         }
         // 拼接从表更新语句
@@ -282,14 +295,19 @@ public class ExtendedDataService {
                 }
             }
         }
-        updateExtSetStr.replace(updateExtSetStr.length() - 1, updateExtSetStr.length(), " ");
+        // DONE 判断为“”时不执行操作
+        if(extParamNum > 0){
+            updateExtSetStr.replace(updateExtSetStr.length() - 1, updateExtSetStr.length(), " ");
+        }
         updateExtParamStr = extDataEntity.getExtEntityAlias() + "." + extDataEntity.getExtEntityForeignkey()
                 + "=:" + mainEntityPrimarykey;
         String updateExtStr = String.format("update %s set %s where %s", updateExtTableStr, updateExtSetStr, updateExtParamStr);
-        if (extParamNum > 0){
+        if (extParamNum > 0) {
             extUpdRows = extendedDataRepository.executeUpdate(updateExtStr, extendedParamMap);
-            if (extUpdRows != 1) {
-                throw new RuntimeException("从表更新记录不唯一或从表未成功更新");
+            if (extUpdRows == 0) {
+                throw new RuntimeException("从表未成功更新");
+            }else if (extUpdRows > 1){
+                throw new RuntimeException("从表更新记录大于1");
             }
         }
         logger.info("传入总参数有" + map.size() + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个。");
@@ -333,7 +351,7 @@ public class ExtendedDataService {
      * 新增扩展数据，使用反射实现
      *
      * @param businessDataType 数据业务类型，枚举类
-     * @param map          要新增的扩展数据，map中的键值对为属性名-属性值，id如果设置有数据库自动生成可以不传。
+     * @param map              要新增的扩展数据，map中的键值对为属性名-属性值，id如果设置有数据库自动生成可以不传。
      * @return 新增结果, true为成功
      */
     @Transactional
