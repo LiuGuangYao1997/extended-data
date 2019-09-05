@@ -41,10 +41,11 @@ public class ExtendedDataService {
     // 扩展配置字段表外键键属性名
     private static final String EXT_FILED_FOREIGNKEY = "extEntityId";
 
+    private Logger logger = LoggerFactory.getLogger(ExtendedDataService.class);
+
     @Autowired
     private ExtendedDataRepository extendedDataRepository;
 
-    private Logger logger = LoggerFactory.getLogger(ExtendedDataService.class);
 
     /**
      * 扩展数据详情查询
@@ -237,10 +238,10 @@ public class ExtendedDataService {
                 }
             } catch (NoSuchFieldException e) {
                 e.printStackTrace();
-            } catch (NumberFormatException e){
-                logger.error("格式转换异常---键：" + mainEntityPrimarykey + "---值：" + map.get(mainEntityPrimarykey).toString());
+            } catch (NumberFormatException e) {
+                logger.error("格式转换异常---键：{}---值：{}", mainEntityPrimarykey, map.get(mainEntityPrimarykey).toString());
                 e.printStackTrace();
-            } catch (NullPointerException e){
+            } catch (NullPointerException e) {
                 logger.error("传入的主键为空");
                 e.printStackTrace();
             }
@@ -268,7 +269,7 @@ public class ExtendedDataService {
                 }
             }
         }
-        if (mainParamNum > 0){
+        if (mainParamNum > 0) {
             updateMainSetStr.replace(updateMainSetStr.length() - 1, updateMainSetStr.length(), " ");
         }
         //拼接where之后的字符串，下同
@@ -279,7 +280,7 @@ public class ExtendedDataService {
             mainUpdRows = extendedDataRepository.executeUpdate(updateMainStr, mainParamMap);
             if (mainUpdRows == 0) {
                 throw new RuntimeException("主表未成功更新");
-            }else if (mainUpdRows > 1){
+            } else if (mainUpdRows > 1) {
                 throw new RuntimeException("主表更新记录大于1");
             }
         }
@@ -299,7 +300,7 @@ public class ExtendedDataService {
             }
         }
         // DONE 判断为“”时不执行操作
-        if(extParamNum > 0){
+        if (extParamNum > 0) {
             updateExtSetStr.replace(updateExtSetStr.length() - 1, updateExtSetStr.length(), " ");
         }
         updateExtParamStr = extDataEntity.getExtEntityAlias() + "." + extDataEntity.getExtEntityForeignkey()
@@ -309,11 +310,11 @@ public class ExtendedDataService {
             extUpdRows = extendedDataRepository.executeUpdate(updateExtStr, extendedParamMap);
             if (extUpdRows == 0) {
                 throw new RuntimeException("扩展表未成功更新");
-            }else if (extUpdRows > 1){
+            } else if (extUpdRows > 1) {
                 throw new RuntimeException("扩展表更新记录大于1");
             }
         }
-        logger.info("传入总参数有" + (mainParamNum + extParamNum) + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个。");
+        logger.info("传入总参数有{}个;主表参数{}个,扩展表参数{}个。", (mainParamNum + extParamNum), mainParamNum, extParamNum);
         return true;
     }
 
@@ -347,8 +348,8 @@ public class ExtendedDataService {
             }
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
-        } catch (NumberFormatException e){
-            logger.error("格式转换异常---键：" + filed.getFiledName() + "---值：" + map.get(filed.getFiledName()).toString());
+        } catch (NumberFormatException e) {
+            logger.error("格式转换异常---键：{}---值：{}",filed.getFiledName(), map.get(filed.getFiledName()).toString());
             e.printStackTrace();
         }
     }
@@ -366,11 +367,11 @@ public class ExtendedDataService {
         List<ExtendedDataFiled> fileds = getExtendedDataFileds(businessDataType);
         //排除传入值为null的键值对
         // DONE 删除引起指向异常
-        if (map != null){
+        if (map != null) {
             Iterator<Map.Entry<String, Object>> iterator = map.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<String, Object> entry = iterator.next();
-                if (entry.getValue() == null){
+                if (entry.getValue() == null) {
                     iterator.remove();
                 }
             }
@@ -378,7 +379,7 @@ public class ExtendedDataService {
         if (map == null || map.isEmpty()) {
             throw new RuntimeException("添加时传入的map为空");
         }
-        if (map.containsKey(dataEntity.getMainEntityPrimarykey()) && map.size() == 1){
+        if (map.containsKey(dataEntity.getMainEntityPrimarykey()) && map.size() == 1) {
             throw new RuntimeException("添加时传入的map应至少有一个属性值");
         }
         try {
@@ -432,7 +433,7 @@ public class ExtendedDataService {
      * @param invokeClass       反射类型
      * @param invokeObject      反射对象
      * @param extendedDataFiled 存储反射对象的属性名的对象实例
-     * @throws NoSuchFieldException   找不到属性
+     * @throws NoSuchFieldException 找不到属性
      */
     private void setInvokeFiled(Map<String, Object> map, Class<?> invokeClass, Object invokeObject, ExtendedDataFiled extendedDataFiled) throws NoSuchFieldException {
         Field field = invokeClass.getDeclaredField(extendedDataFiled.getFiledName());
@@ -460,8 +461,8 @@ public class ExtendedDataService {
                     field.set(invokeObject, Double.valueOf(map.get(extendedDataFiled.getFiledName()).toString()));
                     break;
             }
-        } catch (NumberFormatException e){
-            logger.error("格式转换异常---键：" + extendedDataFiled.getFiledName() + "---值：" + map.get(extendedDataFiled.getFiledName()).toString());
+        } catch (NumberFormatException e) {
+            logger.error("格式转换异常---键：{}---值：{}", extendedDataFiled.getFiledName(), map.get(extendedDataFiled.getFiledName()).toString());
             e.printStackTrace();
         } catch (IllegalArgumentException | IllegalAccessException e) {
             e.printStackTrace();
