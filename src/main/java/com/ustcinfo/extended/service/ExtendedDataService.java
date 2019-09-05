@@ -154,10 +154,10 @@ public class ExtendedDataService {
         String extDeleteStr = String.format("delete %s where %s", extTableStr, extParamStr);
         int exRows = extendedDataRepository.executeUpdate(extDeleteStr, map);
         if (exRows == 0) {
-            throw new RuntimeException("删除的从表记录数为0, 请确认表中是否有该id记录");
+            throw new RuntimeException("删除的扩展表记录数为0, 请确认表中是否有该id记录");
         }
         if (exRows > 1) {
-            throw new RuntimeException("删除的从表记录数大于, 请确认扩展配置表或传入id值是否正确");
+            throw new RuntimeException("删除的扩展表记录数大于1, 请确认扩展配置表或传入id值是否正确");
         }
 
         //拼接主表的删除语句
@@ -308,9 +308,9 @@ public class ExtendedDataService {
         if (extParamNum > 0) {
             extUpdRows = extendedDataRepository.executeUpdate(updateExtStr, extendedParamMap);
             if (extUpdRows == 0) {
-                throw new RuntimeException("从表未成功更新");
+                throw new RuntimeException("扩展表未成功更新");
             }else if (extUpdRows > 1){
-                throw new RuntimeException("从表更新记录大于1");
+                throw new RuntimeException("扩展表更新记录大于1");
             }
         }
         logger.info("传入总参数有" + (mainParamNum + extParamNum) + "个;" + "主表参数" + mainParamNum + "个,扩展表参数" + extParamNum + "个。");
@@ -365,10 +365,13 @@ public class ExtendedDataService {
         ExtendedDataEntity dataEntity = getExtendedDataEntity(businessDataType);
         List<ExtendedDataFiled> fileds = getExtendedDataFileds(businessDataType);
         //排除传入值为null的键值对
+        // DONE 删除引起指向异常
         if (map != null){
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
+            Iterator<Map.Entry<String, Object>> iterator = map.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, Object> entry = iterator.next();
                 if (entry.getValue() == null){
-                    map.remove(entry.getKey());
+                    iterator.remove();
                 }
             }
         }

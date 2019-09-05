@@ -6,18 +6,19 @@ import javax.persistence.Table;
 import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @Description  
- * @Author  idea
- * @Date 2019-08-30 
+ * @Author  liu.guangyao@ustcinfo.com
+ * @Date 2019-09-05 
  */
 
 @Entity
 @Table ( name ="ext_user" , schema = "")
 public class ExtUser  implements Serializable {
 
-	private static final long serialVersionUID =  801566745466732046L;
+	private static final long serialVersionUID =  3832787880281006967L;
 
 	/**
 	 * 关联主表ID
@@ -43,6 +44,12 @@ public class ExtUser  implements Serializable {
 	 */
    	@Column(name = "email" )
 	private String email;
+
+	/**
+	 * 生日
+	 */
+   	@Column(name = "birthday" )
+	private Date birthday;
 
 	public Long getMainTableId() {
 		return this.mainTableId;
@@ -76,6 +83,14 @@ public class ExtUser  implements Serializable {
 		this.email = email;
 	}
 
+	public Date getBirthday() {
+		return this.birthday;
+	}
+
+	public void setBirthday(Date birthday) {
+		this.birthday = birthday;
+	}
+
 	@Override
 	public String toString() {
 		return "TpApiConfig{" +
@@ -83,6 +98,7 @@ public class ExtUser  implements Serializable {
 				"address='" + address + '\'' +
 				"tel='" + tel + '\'' +
 				"email='" + email + '\'' +
+				"birthday='" + birthday + '\'' +
 				'}';
 	}
 
